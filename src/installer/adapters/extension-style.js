@@ -11,6 +11,10 @@ export function createOpenCodeAdapter() {
     bootstrap: 'using-spark -> .opencode/plugins/spark.js -> message transform bootstrap',
     installHint: '.opencode/plugins/spark.js + .opencode/INSTALL.md',
     verifyHint: 'Run opencode logs or a fresh OpenCode session and confirm bootstrap injection.',
+    manualSteps: [
+      'Add `spark@git+https://github.com/adityaaria/SPARK.git` to the `plugin` array in `opencode.json`.',
+      'Restart OpenCode.',
+    ],
   });
 }
 

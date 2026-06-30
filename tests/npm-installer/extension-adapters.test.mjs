@@ -40,3 +40,20 @@ test('extension-style adapters describe the committed repository artifacts they 
   assert.match(opencode.planInstall().installHint, /\.opencode\/plugins\/spark\.js/);
   assert.match(pi.planInstall().installHint, /\.pi\/extensions\/spark\.ts/);
 });
+
+test('extension-style adapters expose command-backed or config-backed install plans', () => {
+  const antigravity = createAntigravityAdapter().planInstall();
+  const gemini = createGeminiAdapter().planInstall();
+  const opencode = createOpenCodeAdapter().planInstall();
+  const pi = createPiAdapter().planInstall();
+
+  assert.equal(antigravity.automated, true);
+  assert.equal(gemini.automated, true);
+  assert.equal(pi.automated, true);
+
+  assert.equal(opencode.automated, false);
+  assert.deepEqual(opencode.manualSteps, [
+    'Add `spark@git+https://github.com/adityaaria/SPARK.git` to the `plugin` array in `opencode.json`.',
+    'Restart OpenCode.',
+  ]);
+});
