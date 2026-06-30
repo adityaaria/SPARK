@@ -1,6 +1,6 @@
 {
   "name": "@adityaaria/spark",
-  "version": "6.0.12",
+  "version": "6.0.13",
   "description": "SPARK skills and runtime bootstrap for coding agents",
   "type": "module",
   "publishConfig": {
