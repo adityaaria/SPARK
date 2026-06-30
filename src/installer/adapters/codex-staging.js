@@ -43,7 +43,7 @@ export function stageCodexPlugin({ cwd = process.cwd(), packageRoot, dryRun = fa
     targetRoot,
     relativeTargetRoot: CODEX_PLUGIN_DIR,
     marketplaceRoot,
-    relativeMarketplaceRoot: CODEX_MARKETPLACE_DIR,
+    relativeMarketplaceRoot: `./${CODEX_MARKETPLACE_DIR}`,
   };
 }
 

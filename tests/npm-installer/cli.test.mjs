@@ -48,7 +48,7 @@ test('CLI dry-run can target a harness without touching the filesystem', () => {
   assert.match(result.stdout, /dry-run/i);
   assert.match(result.stdout, /Harness: Codex CLI \(codex\)/);
   assert.match(result.stdout, /Stage a local Codex marketplace/);
-  assert.match(result.stdout, /codex plugin marketplace add \.spark\/codex-marketplace/);
+  assert.match(result.stdout, /codex plugin marketplace add \.\/\.spark\/codex-marketplace/);
   assert.match(result.stdout, /Verify hint:/);
 });
 
