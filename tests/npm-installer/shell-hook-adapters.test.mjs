@@ -47,17 +47,41 @@ test('shell-hook adapters expose either automated commands or explicit interacti
   const cursor = createCursorAdapter().planInstall();
   const copilot = createCopilotAdapter().planInstall();
 
-  assert.equal(claude.automated, false);
-  assert.deepEqual(claude.manualSteps, ['/plugin install spark@claude-plugins-official']);
+  assert.equal(claude.automated, true);
+  assert.deepEqual(claude.manualSteps, []);
+  assert.deepEqual(claude.automatedSteps, [
+    'Stage a local Claude Code marketplace at .spark/claude-marketplace.',
+    'Register the local marketplace with Claude Code.',
+    'Install the spark plugin from that marketplace.',
+  ]);
+  assert.deepEqual(
+    claude.commands.map((command) => [command.file, ...command.args]),
+    [
+      ['claude', 'plugin', 'marketplace', 'add', '{relativeMarketplaceRoot}'],
+      ['claude', 'plugin', 'install', 'spark@{marketplaceName}'],
+    ]
+  );
 
   assert.equal(codex.automated, true);
   assert.deepEqual(codex.automatedSteps, [
-    'Stage a project-local Codex plugin bundle at .spark/codex-plugin.',
-    'Open Codex plugin install and point it at .spark/codex-plugin.',
+    'Stage a local Codex marketplace at .spark/codex-marketplace.',
+    'Register the local marketplace with Codex.',
+    'Install the spark plugin from that marketplace.',
   ]);
+  assert.deepEqual(
+    codex.commands.map((command) => [command.file, ...command.args]),
+    [
+      ['codex', 'plugin', 'marketplace', 'add', '{relativeMarketplaceRoot}'],
+      ['codex', 'plugin', 'add', 'spark'],
+    ]
+  );
 
-  assert.equal(cursor.automated, false);
-  assert.deepEqual(cursor.manualSteps, ['/add-plugin spark']);
+  assert.equal(cursor.automated, true);
+  assert.deepEqual(cursor.automatedSteps, [
+    'Copy the SPARK plugin into ~/.cursor/plugins/spark.',
+    'Restart Cursor fully to load the new plugin.',
+    'Start a fresh Cursor Agent session and confirm using-spark loads before coding.',
+  ]);
 
   assert.equal(copilot.automated, true);
   assert.deepEqual(

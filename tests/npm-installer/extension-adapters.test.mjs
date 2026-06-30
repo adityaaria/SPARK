@@ -49,11 +49,19 @@ test('extension-style adapters expose command-backed or config-backed install pl
 
   assert.equal(antigravity.automated, true);
   assert.equal(gemini.automated, true);
+  assert.equal(opencode.automated, true);
   assert.equal(pi.automated, true);
-
-  assert.equal(opencode.automated, false);
-  assert.deepEqual(opencode.manualSteps, [
-    'Add `spark@git+https://github.com/adityaaria/SPARK.git` to the `plugin` array in `opencode.json`.',
-    'Restart OpenCode.',
+  assert.deepEqual(antigravity.automatedSteps, [
+    'Install the SPARK plugin into Antigravity.',
+    'Start a fresh Antigravity session to confirm using-spark loads before coding.',
+  ]);
+  assert.deepEqual(gemini.automatedSteps, [
+    'Install the SPARK extension into Gemini CLI.',
+    'Start a fresh Gemini CLI session to confirm using-spark loads at startup.',
+  ]);
+  assert.deepEqual(opencode.automatedSteps, [
+    'Install the SPARK package into the OpenCode config directory.',
+    'Register the spark plugin entry inside the OpenCode plugins directory.',
+    'Restart OpenCode to load the plugin and skills.',
   ]);
 });

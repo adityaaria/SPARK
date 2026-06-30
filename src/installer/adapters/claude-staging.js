@@ -1,26 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const CODEX_MARKETPLACE_DIR = path.join('.spark', 'codex-marketplace');
-const CODEX_PLUGIN_DIR = path.join(CODEX_MARKETPLACE_DIR, 'plugins', 'spark');
+const CLAUDE_MARKETPLACE_DIR = path.join('.spark', 'claude-marketplace');
+const CLAUDE_PLUGIN_DIR = path.join(CLAUDE_MARKETPLACE_DIR, 'plugins', 'spark');
 const COPY_PATHS = [
-  '.codex-plugin',
+  '.claude-plugin',
   'assets',
-  path.join('hooks', 'hooks-codex.json'),
+  path.join('hooks', 'hooks.json'),
   path.join('hooks', 'run-hook.cmd'),
-  path.join('hooks', 'session-start-codex'),
+  path.join('hooks', 'session-start'),
   'skills',
 ];
 
-export function stageCodexPlugin({ cwd = process.cwd(), packageRoot, dryRun = false }) {
-  const marketplaceRoot = path.join(cwd, CODEX_MARKETPLACE_DIR);
-  const targetRoot = path.join(cwd, CODEX_PLUGIN_DIR);
+export function stageClaudePlugin({ cwd = process.cwd(), packageRoot, dryRun = false }) {
+  const marketplaceRoot = path.join(cwd, CLAUDE_MARKETPLACE_DIR);
+  const targetRoot = path.join(cwd, CLAUDE_PLUGIN_DIR);
 
   if (!dryRun) {
     fs.mkdirSync(targetRoot, { recursive: true });
-  }
 
-  if (!dryRun) {
     for (const relativePath of COPY_PATHS) {
       const sourcePath = path.join(packageRoot, relativePath);
       const targetPath = path.join(targetRoot, relativePath);
@@ -41,9 +39,10 @@ export function stageCodexPlugin({ cwd = process.cwd(), packageRoot, dryRun = fa
 
   return {
     targetRoot,
-    relativeTargetRoot: CODEX_PLUGIN_DIR,
+    relativeTargetRoot: CLAUDE_PLUGIN_DIR,
     marketplaceRoot,
-    relativeMarketplaceRoot: CODEX_MARKETPLACE_DIR,
+    relativeMarketplaceRoot: CLAUDE_MARKETPLACE_DIR,
+    marketplaceName: 'spark-local',
   };
 }
 
@@ -54,15 +53,12 @@ function writeMarketplaceManifest(marketplaceRoot) {
     plugins: [
       {
         name: 'spark',
-        source: {
-          source: 'local',
-          path: './plugins/spark',
+        description: 'SPARK local marketplace for Claude Code',
+        version: 'local',
+        source: './plugins/spark',
+        author: {
+          name: 'SPARK',
         },
-        policy: {
-          installation: 'AVAILABLE',
-          authentication: 'ON_INSTALL',
-        },
-        category: 'Productivity',
       },
     ],
   };

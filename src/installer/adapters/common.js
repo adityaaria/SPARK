@@ -45,21 +45,22 @@ export function createAdapter({
       };
     },
     async install({ runner = spawnSync, dryRun = false, cwd = process.cwd(), env = process.env, fs = null } = {}) {
-      if (dryRun) {
-        return { plan: this.planInstall(), metadata: {} };
-      }
-
       if (!automated) {
         throw new InstallerError(`${label} install is not fully automatable yet.`);
       }
 
+      let metadata = {};
+
       if (typeof customInstall === 'function') {
-        const metadata = await customInstall({ cwd, env, fs });
-        return { plan: this.planInstall(), metadata: metadata ?? {} };
+        metadata = (await customInstall({ cwd, env, fs, dryRun })) ?? {};
+      }
+
+      if (dryRun) {
+        return { plan: this.planInstall(), metadata };
       }
 
       for (const entry of commandList) {
-        const result = runner(entry.file, entry.args ?? [], {
+        const result = runner(entry.file, interpolateArgs(entry.args ?? [], metadata), {
           cwd: entry.cwd ?? cwd,
           env: entry.env ?? env,
           encoding: 'utf8',
@@ -72,7 +73,7 @@ export function createAdapter({
         }
       }
 
-      return { plan: this.planInstall(), metadata: {} };
+      return { plan: this.planInstall(), metadata };
     },
     async verify() {
       return verifyHint;
@@ -90,4 +91,15 @@ function normalizeCommandList(commands, command) {
   }
 
   return [];
+}
+
+function interpolateArgs(args, metadata) {
+  return args.map((arg) =>
+    String(arg)
+      .replaceAll('{targetRoot}', metadata.targetRoot ?? '')
+      .replaceAll('{relativeTargetRoot}', metadata.relativeTargetRoot ?? '')
+      .replaceAll('{marketplaceRoot}', metadata.marketplaceRoot ?? '')
+      .replaceAll('{relativeMarketplaceRoot}', metadata.relativeMarketplaceRoot ?? '')
+      .replaceAll('{marketplaceName}', metadata.marketplaceName ?? '')
+  );
 }

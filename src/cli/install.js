@@ -27,12 +27,13 @@ export async function runInstall(options, env) {
   const plan = adapter.planInstall();
 
   if (options.dryRun) {
+    const installPreview = await adapter.install({ dryRun: true, cwd: process.cwd(), env });
     printSection('Preview');
     printLine(labelValue('Mode', 'dry-run'));
     printLine(labelValue('Harness', `${adapter.label} (${adapter.id})`));
     printLine(labelValue('Selection', source));
     printLine(labelValue('Bootstrap', plan.bootstrap));
-    printPlanDetails(plan, {});
+    printPlanDetails(installPreview.plan, installPreview.metadata ?? {});
     printSummary('Nothing changed', [bullet('No filesystem changes were made.')], 'info');
     return;
   }
@@ -82,7 +83,13 @@ function printPlanDetails(plan, metadata) {
     printLine('');
     printSection('Commands');
     for (const [index, command] of plan.commands.entries()) {
-      printLine(step(index + 1, plan.commands.length, commandText(formatCommand(command))));
+      printLine(
+        step(
+          index + 1,
+          plan.commands.length,
+          commandText(formatCommand(command, metadata))
+        )
+      );
     }
   }
 
@@ -109,17 +116,24 @@ function printPlanDetails(plan, metadata) {
   if (metadata.relativeTargetRoot) {
     printLine(labelValue('Bundle path', pathText(metadata.relativeTargetRoot)));
   }
+  if (metadata.relativeMarketplaceRoot) {
+    printLine(labelValue('Marketplace path', pathText(metadata.relativeMarketplaceRoot)));
+  }
 }
 
-function formatCommand(command) {
-  return [command.file, ...(command.args ?? [])].join(' ');
+function formatCommand(command, metadata = {}) {
+  return [command.file, ...(command.args ?? [])]
+    .map((part) => interpolatePlanText(part, metadata))
+    .join(' ');
 }
 
 function interpolatePlanText(text, metadata) {
-  return String(text).replaceAll('{targetRoot}', metadata.targetRoot ?? '').replaceAll(
-    '{relativeTargetRoot}',
-    metadata.relativeTargetRoot ?? ''
-  );
+  return String(text)
+    .replaceAll('{targetRoot}', metadata.targetRoot ?? '')
+    .replaceAll('{relativeTargetRoot}', metadata.relativeTargetRoot ?? '')
+    .replaceAll('{marketplaceRoot}', metadata.marketplaceRoot ?? '')
+    .replaceAll('{relativeMarketplaceRoot}', metadata.relativeMarketplaceRoot ?? '')
+    .replaceAll('{marketplaceName}', metadata.marketplaceName ?? '');
 }
 
 function buildReadyLines(adapter, plan, metadata) {
@@ -129,8 +143,11 @@ function buildReadyLines(adapter, plan, metadata) {
     lines.push(bullet(`Plugin bundle staged at ${pathText(metadata.relativeTargetRoot)}.`));
   }
 
+  if (metadata.relativeMarketplaceRoot) {
+    lines.push(bullet(`Local Codex marketplace staged at ${pathText(metadata.relativeMarketplaceRoot)}.`));
+  }
+
   if (adapter.id === 'codex') {
-    lines.push(bullet(`In Codex, install or import the local plugin from ${pathText(metadata.relativeTargetRoot ?? '.spark/codex-plugin')}.`));
     lines.push(bullet('Start a fresh Codex session to confirm using-spark loads before coding.'));
     return lines;
   }
