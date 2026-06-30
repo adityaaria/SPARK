@@ -38,7 +38,7 @@ test('codex install stages a local marketplace and plugin bundle', async () => {
       ['codex', 'plugin', 'add', 'spark'],
     ]);
 
-    assert.equal(fs.existsSync(path.join(marketplaceRoot, 'marketplace.json')), true);
+    assert.equal(fs.existsSync(path.join(marketplaceRoot, '.agents', 'plugins', 'marketplace.json')), true);
     assert.equal(fs.existsSync(path.join(targetRoot, '.codex-plugin', 'plugin.json')), true);
     assert.equal(fs.existsSync(path.join(targetRoot, 'hooks', 'hooks-codex.json')), true);
     assert.equal(fs.existsSync(path.join(targetRoot, 'hooks', 'run-hook.cmd')), true);

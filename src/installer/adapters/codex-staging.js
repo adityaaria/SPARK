@@ -48,9 +48,13 @@ export function stageCodexPlugin({ cwd = process.cwd(), packageRoot, dryRun = fa
 }
 
 function writeMarketplaceManifest(marketplaceRoot) {
-  const manifestPath = path.join(marketplaceRoot, 'marketplace.json');
+  const manifestPath = path.join(marketplaceRoot, '.agents', 'plugins', 'marketplace.json');
   const manifest = {
     name: 'spark-local',
+    interface: {
+      displayName: 'SPARK',
+      shortDescription: 'Local SPARK marketplace for Codex CLI',
+    },
     plugins: [
       {
         name: 'spark',
@@ -67,6 +71,6 @@ function writeMarketplaceManifest(marketplaceRoot) {
     ],
   };
 
-  fs.mkdirSync(marketplaceRoot, { recursive: true });
+  fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 }
