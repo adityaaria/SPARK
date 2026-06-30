@@ -1,9 +1,35 @@
 {
-  "name": "superpowers",
+  "name": "spark",
   "version": "6.0.3",
-  "description": "Superpowers skills and runtime bootstrap for coding agents",
+  "description": "SPARK skills and runtime bootstrap for coding agents",
   "type": "module",
-  "main": ".opencode/plugins/superpowers.js",
+  "bin": {
+    "spark": "bin/spark.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "hooks",
+    ".claude-plugin",
+    ".codex-plugin",
+    ".cursor-plugin",
+    ".kimi-plugin",
+    ".opencode",
+    ".pi",
+    "assets",
+    "README.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "CODE_OF_CONDUCT.md",
+    "RELEASE-NOTES.md",
+    "docs/README.kimi.md",
+    "docs/README.opencode.md",
+    "docs/porting-to-a-new-harness.md",
+    "gemini-extension.json",
+    ".version-bump.json"
+  ],
+  "main": ".opencode/plugins/spark.js",
   "keywords": [
     "pi-package",
     "skills",
@@ -14,7 +40,7 @@
   ],
   "pi": {
     "extensions": [
-      "./.pi/extensions/superpowers.ts"
+      "./.pi/extensions/spark.ts"
     ],
     "skills": [
       "./skills"

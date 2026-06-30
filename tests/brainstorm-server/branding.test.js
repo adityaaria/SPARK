@@ -1,5 +1,5 @@
 /**
- * Tests for the visual companion's Superpowers/Prime Radiant branding.
+ * Tests for the visual companion's SPARK branding.
  */
 
 const { spawn } = require('child_process');
@@ -14,7 +14,7 @@ const PACKAGE_VERSION = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf-8')
 ).version;
 const TOKEN = 'testtoken-branding-0123456789abcdef';
-const ASSET_URL = 'https://primeradiant.com/brand/superpowers-visual-brainstorming-logo.png';
+const ASSET_MARKER = 'data:image/svg+xml;base64,';
 
 function cleanup(dir) {
   if (fs.existsSync(dir)) {
@@ -75,13 +75,18 @@ function writeFragment(dir) {
 }
 
 function createPackagedServerFixture(version) {
-  const root = fs.mkdtempSync(path.join('/tmp', 'superpowers-packaged-server-'));
+  const root = fs.mkdtempSync(path.join('/tmp', 'spark-packaged-server-'));
   const scriptDir = path.join(root, 'skills/brainstorming/scripts');
   fs.cpSync(path.join(REPO_ROOT, 'skills/brainstorming/scripts'), scriptDir, { recursive: true });
+  fs.mkdirSync(path.join(root, 'assets'), { recursive: true });
+  fs.copyFileSync(
+    path.join(REPO_ROOT, 'assets/spark-small.svg'),
+    path.join(root, 'assets/spark-small.svg')
+  );
   fs.mkdirSync(path.join(root, '.codex-plugin'), { recursive: true });
   fs.writeFileSync(
     path.join(root, '.codex-plugin/plugin.json'),
-    JSON.stringify({ name: 'superpowers', version }, null, 2)
+    JSON.stringify({ name: 'spark', version }, null, 2)
   );
   return {
     root,
@@ -121,16 +126,16 @@ async function test(name, fn) {
 
 function assertBrandedWithLogo(html, version = PACKAGE_VERSION) {
   assert(
-    html.includes(`Superpowers v${version}`),
+    html.includes(`SPARK v${version}`),
     'branding text should include dynamic package version'
   );
   assert(
-    !html.includes(`Superpowers v${version} by`),
+    !html.includes(`SPARK v${version} by`),
     'branding text should not include "by" when the logo is visible'
   );
   assert(
-    /<img class="brand-logo"[^>]*>\s*<span class="brand-copy">Superpowers v/.test(html),
-    'visible logo should appear before the Superpowers version text'
+    /<img class="brand-logo"[^>]*>\s*<span class="brand-copy">SPARK v/.test(html),
+    'visible logo should appear before the SPARK version text'
   );
   assert(
     /\.brand a\s*\{[^}]*line-height:\s*1/i.test(html),
@@ -156,18 +161,17 @@ function assertBrandedWithLogo(html, version = PACKAGE_VERSION) {
 
 function assertBrandedFallbackText(html, version = PACKAGE_VERSION) {
   assert(
-    html.includes(`Prime Radiant Superpowers v${version}`),
-    'disabled telemetry should keep plain text Prime Radiant/Superpowers branding'
+    html.includes(`SPARK v${version}`),
+    'disabled telemetry should keep plain text SPARK branding'
   );
 }
 
 function assertTelemetryImage(html, version = PACKAGE_VERSION) {
-  const expectedUrl = `${ASSET_URL}?v=${encodeURIComponent(version)}`;
-  assert(html.includes(`src="${expectedUrl}"`), 'remote image should use the dedicated main-domain asset with only v=');
-  assert(!html.includes('event='), 'remote image URL must not include event=');
-  assert(!html.includes('surface='), 'remote image URL must not include surface=');
-  assert(!html.includes('launch_id='), 'remote image URL must not include launch_id=');
-  assert(!html.includes('lid='), 'remote image URL must not include lid=');
+  assert(html.includes(ASSET_MARKER), 'branding should embed the local logo asset');
+  assert(!html.includes('event='), 'embedded asset must not include tracking parameters');
+  assert(!html.includes('surface='), 'embedded asset must not include tracking parameters');
+  assert(!html.includes('launch_id='), 'embedded asset must not include tracking parameters');
+  assert(!html.includes('lid='), 'embedded asset must not include tracking parameters');
 }
 
 function assertLogoKeepsTransparentBackground(html) {
@@ -242,7 +246,7 @@ function assertHeaderAvoidsNarrowOverlap(html) {
 async function main() {
   console.log('\n--- Visual Companion Branding ---');
 
-  await test('framed screens render versioned Prime Radiant logo by default', async () => {
+  await test('framed screens render versioned SPARK logo by default', async () => {
     const port = 3451;
     const dir = '/tmp/brainstorm-branding-default';
     await withServer({ port, dir }, async () => {
@@ -258,7 +262,7 @@ async function main() {
     });
   });
 
-  await test('waiting screen renders versioned Prime Radiant logo by default', async () => {
+  await test('waiting screen renders versioned SPARK logo by default', async () => {
     const port = 3452;
     const dir = '/tmp/brainstorm-branding-waiting';
     await withServer({ port, dir }, async () => {
@@ -283,32 +287,32 @@ async function main() {
         const html = await fetchHtml(port);
         assertBrandedWithLogo(html, packagedVersion);
         assertTelemetryImage(html, packagedVersion);
-        assert(!html.includes('Superpowers vunknown'), 'packaged plugin should not fall back to unknown version');
+        assert(!html.includes('SPARK vunknown'), 'packaged plugin should not fall back to unknown version');
       });
     } finally {
       cleanup(fixture.root);
     }
   });
 
-  await test('SUPERPOWERS_DISABLE_TELEMETRY=true omits remote image but keeps local branding', async () => {
+  await test('SPARK_DISABLE_TELEMETRY=true omits remote image but keeps local branding', async () => {
     const port = 3453;
     const dir = '/tmp/brainstorm-branding-disabled';
-    await withServer({ port, dir, env: { SUPERPOWERS_DISABLE_TELEMETRY: 'true' } }, async () => {
+    await withServer({ port, dir, env: { SPARK_DISABLE_TELEMETRY: 'true' } }, async () => {
       writeFragment(dir);
       await sleep(300);
       const html = await fetchHtml(port);
       assertBrandedFallbackText(html);
-      assert(!html.includes(ASSET_URL), 'disabled telemetry should omit the remote image');
+      assert(!html.includes(ASSET_MARKER), 'disabled telemetry should omit the embedded logo');
     });
   });
 
-  await test('SUPERPOWERS_DISABLE_TELEMETRY=yes also omits the remote image on the waiting screen', async () => {
+  await test('SPARK_DISABLE_TELEMETRY=yes also omits the remote image on the waiting screen', async () => {
     const port = 3454;
     const dir = '/tmp/brainstorm-branding-disabled-waiting';
-    await withServer({ port, dir, env: { SUPERPOWERS_DISABLE_TELEMETRY: 'yes' } }, async () => {
+    await withServer({ port, dir, env: { SPARK_DISABLE_TELEMETRY: 'yes' } }, async () => {
       const html = await fetchHtml(port);
       assertBrandedFallbackText(html);
-      assert(!html.includes(ASSET_URL), 'disabled telemetry should omit the remote image');
+      assert(!html.includes(ASSET_MARKER), 'disabled telemetry should omit the embedded logo');
     });
   });
 
@@ -320,7 +324,7 @@ async function main() {
       await sleep(300);
       const html = await fetchHtml(port);
       assertBrandedFallbackText(html);
-      assert(!html.includes(ASSET_URL), 'Claude Code telemetry opt-out should omit the remote image');
+      assert(!html.includes(ASSET_MARKER), 'Claude Code telemetry opt-out should omit the embedded logo');
     });
   });
 
@@ -330,7 +334,7 @@ async function main() {
     await withServer({ port, dir, env: { CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' } }, async () => {
       const html = await fetchHtml(port);
       assertBrandedFallbackText(html);
-      assert(!html.includes(ASSET_URL), 'Claude Code non-essential traffic opt-out should omit the remote image');
+      assert(!html.includes(ASSET_MARKER), 'Claude Code non-essential traffic opt-out should omit the embedded logo');
     });
   });
 

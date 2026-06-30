@@ -1,14 +1,14 @@
 {
-  "name": "superpowers",
-  "displayName": "Superpowers",
+  "name": "spark",
+  "displayName": "SPARK",
   "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques",
   "version": "6.0.3",
   "author": {
     "name": "Jesse Vincent",
     "email": "jesse@fsck.com"
   },
-  "homepage": "https://github.com/obra/superpowers",
-  "repository": "https://github.com/obra/superpowers",
+  "homepage": "https://github.com/adityaaria/SPARK",
+  "repository": "https://github.com/adityaaria/SPARK",
   "license": "MIT",
   "keywords": [
     "skills",
