@@ -1,6 +1,5 @@
 import { spawnSync } from 'node:child_process';
 import { InstallerError } from '../errors.js';
-import { copyToGlobal } from './global-skills-copy.js';
 
 export function createAdapter({
   id,
@@ -18,7 +17,6 @@ export function createAdapter({
   envKeys = [],
   binaryNames = [],
   configPaths = [],
-  packageRoot = null,
 }) {
   const commandList = normalizeCommandList(commands, command);
   const automated = commandList.length > 0 || typeof customInstall === 'function';
@@ -61,17 +59,6 @@ export function createAdapter({
         return { plan: this.planInstall(), metadata };
       }
 
-      // Step 1: ALWAYS copy skills + hooks to global directory (primary mechanism)
-      let globalCopyResult = { copied: false };
-      if (packageRoot) {
-        try {
-          globalCopyResult = copyToGlobal(id, packageRoot, env);
-        } catch { /* global copy failed — will try CLI next */ }
-      }
-
-      // Step 2: Try CLI commands (optional bonus — for marketplace integration)
-      let cliSuccess = false;
-      let cliSkipped = false;
       for (const entry of commandList) {
         const result = runner(entry.file, interpolateArgs(entry.args ?? [], metadata), {
           cwd: entry.cwd ?? cwd,
@@ -80,47 +67,14 @@ export function createAdapter({
         });
 
         if (result.error) {
-          if (result.error.code === 'ENOENT') {
-            // CLI not found — not a problem if global copy succeeded
-            cliSkipped = true;
-            break;
-          }
-          // Other errors — also non-fatal if global copy succeeded
-          if (globalCopyResult.copied) {
-            cliSkipped = true;
-            break;
-          }
           throw new InstallerError(`${label} install failed: ${result.error.message}`);
         }
 
         if (result.status !== 0) {
-          if (globalCopyResult.copied) {
-            cliSkipped = true;
-            break;
-          }
           throw new InstallerError(
             `${label} install failed: ${result.stderr || result.stdout || 'unknown error'}`
           );
         }
-
-        cliSuccess = true;
-      }
-
-      // Determine result type
-      if (globalCopyResult.copied) {
-        return {
-          plan: this.planInstall(),
-          metadata,
-          globalCopy: true,
-          globalSkillsPath: globalCopyResult.globalSkillsPath,
-          cliSuccess,
-          cliSkipped,
-        };
-      }
-
-      // Neither global copy nor CLI worked — nothing we can do
-      if (!cliSuccess && commandList.length > 0) {
-        throw new InstallerError(`${label} install failed: unable to copy skills or run CLI.`);
       }
 
       return { plan: this.planInstall(), metadata };

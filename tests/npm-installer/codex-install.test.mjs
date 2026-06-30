@@ -20,6 +20,7 @@ test('codex install stages a local marketplace and plugin bundle', async () => {
     const targetRoot = path.join(marketplaceRoot, 'plugins', 'spark');
 
     assert.equal(result.plan.automated, true);
+    assert.equal(result.globalCopy, undefined);
     assert.equal(result.metadata.relativeTargetRoot, path.join('.spark', 'codex-marketplace', 'plugins', 'spark'));
     assert.equal(result.metadata.relativeMarketplaceRoot, path.join('.spark', 'codex-marketplace'));
     assert.deepEqual(calls, [

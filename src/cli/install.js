@@ -57,32 +57,6 @@ export async function runInstall(options, env) {
 
   const installResult = await adapter.install({ options, env });
 
-  // Handle global copy result
-  if (installResult?.globalCopy) {
-    printSection('Install');
-    printLine(labelValue('Harness', adapter.label));
-
-    if (installResult.cliSuccess) {
-      // Both global copy AND CLI succeeded — full install
-      printLine(statusText(`Installed SPARK for ${adapter.label}.`, 'success'));
-    } else {
-      // Global copy succeeded, CLI was skipped — still fully functional
-      printLine(statusText(`SPARK skills installed to ${installResult.globalSkillsPath}`, 'success'));
-    }
-
-    const readyLines = [
-      bullet(`SPARK skills and hooks copied to ${installResult.globalSkillsPath}.`),
-      bullet(`Open a fresh ${adapter.label} session to confirm using-spark loads before coding.`),
-    ];
-
-    if (installResult.cliSkipped) {
-      readyLines.push(bullet(`CLI integration skipped (optional — SPARK already works without it).`));
-    }
-
-    printSummary('Ready', readyLines, 'success');
-    return;
-  }
-
   if (typeof adapter.verify === 'function') {
     await adapter.verify({ options, env });
   }
