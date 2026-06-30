@@ -77,7 +77,7 @@ test('shell-hook adapters expose either automated commands or explicit interacti
     codex.commands.map((command) => [command.file, ...command.args]),
     [
       ['codex', 'plugin', 'marketplace', 'add', '{relativeMarketplaceRoot}'],
-      ['codex', 'plugin', 'add', 'spark'],
+      ['codex', 'plugin', 'add', 'spark@{marketplaceName}'],
     ]
   );
 

@@ -58,7 +58,7 @@ export function createCodexAdapter() {
       },
       {
         file: 'codex',
-        args: ['plugin', 'add', 'spark'],
+        args: ['plugin', 'add', 'spark@{marketplaceName}'],
       },
     ],
     automatedSteps: [

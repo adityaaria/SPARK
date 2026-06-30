@@ -44,6 +44,7 @@ export function stageCodexPlugin({ cwd = process.cwd(), packageRoot, dryRun = fa
     relativeTargetRoot: CODEX_PLUGIN_DIR,
     marketplaceRoot,
     relativeMarketplaceRoot: `./${CODEX_MARKETPLACE_DIR}`,
+    marketplaceName: 'spark-local',
   };
 }
 
