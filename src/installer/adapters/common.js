@@ -1,5 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { InstallerError } from '../errors.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export function createAdapter({
   id,
@@ -49,6 +51,11 @@ export function createAdapter({
         throw new InstallerError(`${label} install is not fully automatable yet.`);
       }
 
+      const fsImpl = fs ?? nativeFs;
+      if (!dryRun) {
+        assertBinaryAvailability({ label, binaryNames, env, fsImpl });
+      }
+
       let metadata = {};
 
       if (typeof customInstall === 'function') {
@@ -85,6 +92,8 @@ export function createAdapter({
   };
 }
 
+const nativeFs = fs;
+
 function normalizeCommandList(commands, command) {
   if (Array.isArray(commands) && commands.length > 0) {
     return commands;
@@ -95,6 +104,46 @@ function normalizeCommandList(commands, command) {
   }
 
   return [];
+}
+
+function assertBinaryAvailability({ label, binaryNames, env, fsImpl }) {
+  if (!binaryNames || binaryNames.length === 0) {
+    return;
+  }
+
+  for (const binaryName of binaryNames) {
+    if (commandExists(binaryName, env, fsImpl)) {
+      return;
+    }
+  }
+
+  throw new InstallerError(`${label} is not installed or not on PATH. Install ${label} first, then rerun SPARK install.`);
+}
+
+function commandExists(commandName, env, fsImpl) {
+  const paths = String(env.PATH ?? '').split(path.delimiter).filter(Boolean);
+  const exts = process.platform === 'win32'
+    ? String(env.PATHEXT ?? '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean)
+    : [''];
+
+  for (const dir of paths) {
+    for (const ext of exts) {
+      const candidate = path.join(dir, `${commandName}${ext}`);
+      try {
+        fsImpl.accessSync(candidate, fs.constants.X_OK);
+        return true;
+      } catch {
+        try {
+          fsImpl.accessSync(candidate, fs.constants.F_OK);
+          return true;
+        } catch {
+          continue;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 function interpolateArgs(args, metadata) {

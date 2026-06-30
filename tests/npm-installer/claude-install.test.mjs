@@ -7,15 +7,25 @@ import { createClaudeCodeAdapter } from '../../src/installer/adapters/shell-hook
 
 test('claude install stages a local marketplace and plugin bundle', async () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'spark-claude-install-'));
+  const tempBin = fs.mkdtempSync(path.join(os.tmpdir(), 'spark-claude-bin-'));
+  const claudeBinary = path.join(tempBin, 'claude');
 
   try {
+    fs.writeFileSync(claudeBinary, '', { mode: 0o755 });
     const adapter = createClaudeCodeAdapter();
     const calls = [];
     const runner = (file, args) => {
       calls.push([file, ...args]);
       return { status: 0, stdout: '', stderr: '' };
     };
-    const result = await adapter.install({ cwd: tempRoot, runner });
+    const result = await adapter.install({
+      cwd: tempRoot,
+      env: {
+        ...process.env,
+        PATH: tempBin,
+      },
+      runner,
+    });
     const marketplaceRoot = path.join(tempRoot, '.spark', 'claude-marketplace');
     const targetRoot = path.join(marketplaceRoot, 'plugins', 'spark');
 
@@ -37,5 +47,6 @@ test('claude install stages a local marketplace and plugin bundle', async () => 
     assert.equal(fs.existsSync(path.join(targetRoot, 'skills', 'using-spark', 'SKILL.md')), true);
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
+    fs.rmSync(tempBin, { recursive: true, force: true });
   }
 });

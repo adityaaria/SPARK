@@ -7,15 +7,19 @@ import { createOpenCodeAdapter } from '../../src/installer/adapters/extension-st
 
 test('opencode install copies the package and registers the plugin entry', async () => {
   const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'spark-opencode-home-'));
+  const tempBin = fs.mkdtempSync(path.join(os.tmpdir(), 'spark-opencode-bin-'));
+  const opencodeBinary = path.join(tempBin, 'opencode');
   const configDir = path.join(tempHome, '.config', 'opencode');
 
   try {
+    fs.writeFileSync(opencodeBinary, '', { mode: 0o755 });
     const adapter = createOpenCodeAdapter();
     const result = await adapter.install({
       env: {
         ...process.env,
         HOME: tempHome,
         OPENCODE_CONFIG_DIR: configDir,
+        PATH: tempBin,
       },
     });
 
@@ -35,5 +39,6 @@ test('opencode install copies the package and registers the plugin entry', async
     assert.equal(fs.readlinkSync(registeredPlugin), pluginFile);
   } finally {
     fs.rmSync(tempHome, { recursive: true, force: true });
+    fs.rmSync(tempBin, { recursive: true, force: true });
   }
 });
