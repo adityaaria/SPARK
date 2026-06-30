@@ -46,8 +46,19 @@ test('CLI dry-run can target a harness without touching the filesystem', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /codex/i);
   assert.match(result.stdout, /dry-run/i);
-  assert.match(result.stdout, /Harness: Codex \(codex\)/);
+  assert.match(result.stdout, /Harness: Codex CLI \(codex\)/);
   assert.match(result.stdout, /Stage a local Codex marketplace/);
   assert.match(result.stdout, /codex plugin marketplace add \.spark\/codex-marketplace/);
   assert.match(result.stdout, /Verify hint:/);
+});
+
+test('CLI dry-run can target VS Code and auto-register the local plugin bundle', () => {
+  const result = runCli(['install', '--dry-run', '--harness', 'vscode']);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Harness: VS Code \(vscode\)/);
+  assert.match(result.stdout, /Prepare a local VS Code plugin bundle/);
+  assert.match(result.stdout, /Bundle path: .*\.spark\/vscode-plugin/);
+  assert.match(result.stdout, /chat\.pluginLocations/);
+  assert.doesNotMatch(result.stdout, /codex plugin marketplace add/);
 });

@@ -139,16 +139,26 @@ function interpolatePlanText(text, metadata) {
 function buildReadyLines(adapter, plan, metadata) {
   const lines = [];
 
-  if (metadata.relativeTargetRoot) {
+  if (metadata.relativeTargetRoot && adapter.id === 'vscode') {
+    lines.push(bullet(`Local VS Code bundle prepared at ${pathText(metadata.relativeTargetRoot)}.`));
+  } else if (metadata.relativeTargetRoot) {
     lines.push(bullet(`Plugin bundle staged at ${pathText(metadata.relativeTargetRoot)}.`));
   }
 
   if (metadata.relativeMarketplaceRoot) {
-    lines.push(bullet(`Local Codex marketplace staged at ${pathText(metadata.relativeMarketplaceRoot)}.`));
+    lines.push(bullet(`Local marketplace staged at ${pathText(metadata.relativeMarketplaceRoot)}.`));
   }
 
   if (adapter.id === 'codex') {
     lines.push(bullet('Start a fresh Codex session to confirm using-spark loads before coding.'));
+    return lines;
+  }
+
+  if (adapter.id === 'vscode') {
+    if (metadata.relativeSettingsPath) {
+      lines.push(bullet(`VS Code plugin registration was written to ${pathText(metadata.relativeSettingsPath)}.`));
+    }
+    lines.push(bullet('Open a fresh VS Code agent session to confirm using-spark loads before coding.'));
     return lines;
   }
 

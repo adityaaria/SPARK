@@ -24,7 +24,7 @@ export function printHelp() {
   printLine('');
   printMuted('Without --harness, the installer will ask which AI assistance to target.');
   printLine('');
-  printLine(labelValue('Supported', 'Codex, Cursor, Antigravity, Copilot, OpenCode, Gemini, Pi'));
+  printLine(labelValue('Supported', 'Claude Code, Codex CLI, VS Code, Cursor, Copilot CLI, OpenCode, Gemini CLI, Pi, Antigravity'));
 }
 
 export function printCommandHeader(title) {
@@ -101,9 +101,15 @@ export function formatPromptPrefix() {
   return `${styled('◆', 'spark')} ${styled('Select', 'pink', true)} ${styled('›', 'dimGray')} `;
 }
 
-export function promptOption(index, label, id, hint = null) {
+export function promptOption(index, label, id, hint = null, detail = null) {
   const base = `${styled(`${index}.`, 'spark', true)} ${styled(label, 'white', true)} ${styled(`(${id})`, 'dimGray')}`;
-  return hint ? `${base} ${styled(hint, 'warning')}` : base;
+  const header = hint ? `${base} ${styled(hint, 'warning')}` : base;
+
+  if (!detail) {
+    return header;
+  }
+
+  return `${header}\n   ${styled(detail, 'dimGray')}`;
 }
 
 function styled(text, tone, bold = false) {

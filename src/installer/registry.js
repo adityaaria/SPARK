@@ -3,6 +3,7 @@ import {
   createCodexAdapter,
   createCopilotAdapter,
   createCursorAdapter,
+  createVsCodeAdapter,
 } from './adapters/shell-hook.js';
 import {
   createAntigravityAdapter,
@@ -14,6 +15,7 @@ import {
 const ADAPTERS = [
   createClaudeCodeAdapter(),
   createCodexAdapter(),
+  createVsCodeAdapter(),
   createCursorAdapter(),
   createCopilotAdapter(),
   createOpenCodeAdapter(),

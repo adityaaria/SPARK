@@ -5,19 +5,21 @@ import {
   createCodexAdapter,
   createCopilotAdapter,
   createCursorAdapter,
+  createVsCodeAdapter,
 } from '../../src/installer/adapters/shell-hook.js';
 
 test('shell-hook adapters expose stable identifiers and plans', () => {
   const adapters = [
     createClaudeCodeAdapter(),
     createCodexAdapter(),
+    createVsCodeAdapter(),
     createCursorAdapter(),
     createCopilotAdapter(),
   ];
 
   assert.deepEqual(
     adapters.map((adapter) => adapter.id),
-    ['claude', 'codex', 'cursor', 'copilot']
+    ['claude', 'codex', 'vscode', 'cursor', 'copilot']
   );
 
   for (const adapter of adapters) {
@@ -32,11 +34,13 @@ test('shell-hook adapters expose stable identifiers and plans', () => {
 test('shell-hook adapters describe the committed repository artifacts they rely on', () => {
   const claude = createClaudeCodeAdapter();
   const codex = createCodexAdapter();
+  const vscode = createVsCodeAdapter();
   const cursor = createCursorAdapter();
   const copilot = createCopilotAdapter();
 
   assert.match(claude.planInstall().installHint, /\.claude-plugin\/plugin\.json/);
   assert.match(codex.planInstall().installHint, /\.codex-plugin\/plugin\.json/);
+  assert.match(vscode.planInstall().installHint, /chat\.pluginLocations/);
   assert.match(cursor.planInstall().installHint, /\.cursor-plugin\/plugin\.json/);
   assert.match(copilot.planInstall().installHint, /copilot-tools\.md/);
 });
@@ -44,6 +48,7 @@ test('shell-hook adapters describe the committed repository artifacts they rely 
 test('shell-hook adapters expose either automated commands or explicit interactive steps', () => {
   const claude = createClaudeCodeAdapter().planInstall();
   const codex = createCodexAdapter().planInstall();
+  const vscode = createVsCodeAdapter().planInstall();
   const cursor = createCursorAdapter().planInstall();
   const copilot = createCopilotAdapter().planInstall();
 
@@ -75,6 +80,14 @@ test('shell-hook adapters expose either automated commands or explicit interacti
       ['codex', 'plugin', 'add', 'spark'],
     ]
   );
+
+  assert.equal(vscode.automated, true);
+  assert.equal(vscode.commands.length, 0);
+  assert.deepEqual(vscode.automatedSteps, [
+    'Prepare a local VS Code plugin bundle at .spark/vscode-plugin.',
+    'Register that bundle in .vscode/settings.json via chat.pluginLocations.',
+    'Start a fresh VS Code agent session so using-spark loads before coding.',
+  ]);
 
   assert.equal(cursor.automated, true);
   assert.deepEqual(cursor.automatedSteps, [

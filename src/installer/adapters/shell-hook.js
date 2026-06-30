@@ -2,6 +2,7 @@ import { createAdapter } from './common.js';
 import { stageClaudePlugin } from './claude-staging.js';
 import { stageCodexPlugin } from './codex-staging.js';
 import { installCursorPlugin } from './cursor-staging.js';
+import { installVsCodePlugin } from './vscode-staging.js';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,14 +43,14 @@ export function createClaudeCodeAdapter() {
 export function createCodexAdapter() {
   return createAdapter({
     id: 'codex',
-    label: 'Codex',
+    label: 'Codex CLI',
     kind: 'shell-hook',
     envKeys: ['CLAUDE_PLUGIN_ROOT'],
     binaryNames: ['codex'],
     bootstrap: 'shell hook -> hooks/session-start-codex -> using-spark',
     installHint: '.codex-plugin/plugin.json + hooks/hooks-codex.json + hooks/session-start-codex',
     verifyHint: 'Run a fresh Codex session and confirm using-spark loads before coding.',
-    successMessage: 'Installed SPARK for Codex.',
+    successMessage: 'Installed SPARK for Codex CLI.',
     commands: [
       {
         file: 'codex',
@@ -67,6 +68,26 @@ export function createCodexAdapter() {
     ],
     customInstall({ cwd, dryRun }) {
       return stageCodexPlugin({ cwd, packageRoot, dryRun });
+    },
+  });
+}
+
+export function createVsCodeAdapter() {
+  return createAdapter({
+    id: 'vscode',
+    label: 'VS Code',
+    kind: 'shell-hook',
+    bootstrap: 'workspace plugin bundle -> VS Code chat.pluginLocations -> hooks/session-start -> using-spark',
+    installHint: 'A Claude-compatible plugin bundle is staged locally and registered through .vscode/settings.json chat.pluginLocations.',
+    verifyHint: 'Open a fresh VS Code agent session and confirm using-spark loads before coding.',
+    successMessage: 'SPARK is ready in VS Code.',
+    automatedSteps: [
+      'Prepare a local VS Code plugin bundle at .spark/vscode-plugin.',
+      'Register that bundle in .vscode/settings.json via chat.pluginLocations.',
+      'Start a fresh VS Code agent session so using-spark loads before coding.',
+    ],
+    customInstall({ cwd, dryRun }) {
+      return installVsCodePlugin({ cwd, packageRoot, dryRun });
     },
   });
 }

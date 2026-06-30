@@ -164,7 +164,15 @@ function renderPrompt(candidates, validationMessage = null) {
 
   for (const [index, candidate] of candidates.entries()) {
     const hint = recommendedIds.has(candidate.id) ? 'recommended' : null;
-    lines.push(promptOption(index + 1, candidate.label, candidate.id, hint));
+    lines.push(
+      promptOption(
+        index + 1,
+        candidate.label,
+        candidate.id,
+        hint,
+        describeHarness(candidate.id)
+      )
+    );
   }
 
   return formatPromptBlock(
@@ -189,6 +197,42 @@ function resolvePromptAnswer(answer, candidates) {
   return getAdapterById(exact.id);
 }
 
+function describeHarness(id) {
+  const descriptions = {
+    claude: 'Best for Claude Code sessions and project-local plugin workflows.',
+    codex: 'For the Codex CLI plugin marketplace flow in terminal sessions.',
+    vscode: 'One install path for VS Code agent sessions across Claude, Copilot, GPT, and other supported models.',
+    cursor: 'Native Cursor plugin install for fresh Agent sessions.',
+    copilot: 'For GitHub Copilot CLI in terminal-based agent sessions.',
+    opencode: 'Registers the OpenCode plugin in your local config directory.',
+    gemini: 'Installs the Gemini CLI extension and loads SPARK at startup.',
+    pi: 'Installs the Pi extension from the SPARK repository.',
+    antigravity: 'Installs the Antigravity plugin and loads SPARK on new sessions.',
+  };
+
+  return descriptions[id] ?? null;
+}
+
 function normalizeHarness(value) {
-  return String(value ?? '').trim().toLowerCase();
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (!normalized) {
+    return '';
+  }
+
+  const aliases = new Map([
+    ['codex cli', 'codex'],
+    ['codex-cli', 'codex'],
+    ['codex vscode', 'vscode'],
+    ['codex vs code', 'vscode'],
+    ['codex-vs-code', 'vscode'],
+    ['codex app', 'vscode'],
+    ['copilot vscode', 'vscode'],
+    ['copilot vs code', 'vscode'],
+    ['copilot-vs-code', 'vscode'],
+    ['vscode agent', 'vscode'],
+    ['vs code', 'vscode'],
+  ]);
+
+  return aliases.get(normalized) ?? normalized;
 }

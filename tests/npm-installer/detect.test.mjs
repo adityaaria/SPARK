@@ -42,6 +42,20 @@ test('explicit harness override wins over detection signals', async () => {
   assert.equal(choice.source, 'forced');
 });
 
+test('vscode aliases resolve to the shared VS Code adapter', async () => {
+  const choice = await chooseHarness({
+    forcedHarness: 'codex app',
+    env: { PATH: '/usr/bin' },
+    fs: fakeFs(),
+    prompt: async () => {
+      throw new Error('prompt should not be called');
+    },
+  });
+
+  assert.equal(choice.adapter.id, 'vscode');
+  assert.equal(choice.source, 'forced');
+});
+
 test('detector scores strong environment signals for a single harness', () => {
   const candidates = detectHarnessCandidates({
     env: {
@@ -69,9 +83,10 @@ test('ambiguous detection asks the user to choose', async () => {
   });
 
   assert.equal(chooser.calls.length, 1);
-  assert.match(chooser.calls[0], /Codex/);
+  assert.match(chooser.calls[0], /Codex CLI/);
+  assert.match(chooser.calls[0], /VS Code/);
   assert.match(chooser.calls[0], /Cursor/);
-  assert.ok(['codex', 'cursor'].includes(choice.adapter.id));
+  assert.ok(['codex', 'vscode', 'cursor'].includes(choice.adapter.id));
   assert.equal(choice.source, 'prompt');
 });
 
@@ -89,7 +104,7 @@ test('install without forced harness always prompts even with a strong detection
   assert.equal(chooser.calls.length, 1);
   assert.match(chooser.calls[0], /AI assistance/i);
   assert.match(chooser.calls[0], /Gemini CLI/);
-  assert.match(chooser.calls[0], /Codex/);
+  assert.match(chooser.calls[0], /Codex CLI/);
   assert.equal(choice.adapter.id, 'gemini');
   assert.equal(choice.source, 'prompt');
 });
@@ -111,7 +126,7 @@ test('no detection signals still prompts with the full harness list', async () =
 });
 
 test('invalid prompt answer asks again until the user picks a supported harness', async () => {
-  const answers = ['99', 'codex'];
+  const answers = ['99', 'vscode'];
   const calls = [];
   const choice = await chooseHarness({
     env: { PATH: '' },
@@ -123,6 +138,6 @@ test('invalid prompt answer asks again until the user picks a supported harness'
   });
 
   assert.equal(calls.length, 2);
-  assert.equal(choice.adapter.id, 'codex');
+  assert.equal(choice.adapter.id, 'vscode');
   assert.equal(choice.source, 'prompt');
 });
