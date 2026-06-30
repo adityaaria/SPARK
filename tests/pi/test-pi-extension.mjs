@@ -45,7 +45,7 @@ function textOf(message) {
 test('package.json declares a pi package with skills and extension resources', async () => {
   const pkg = await readPackageJson();
 
-  assert.equal(pkg.name, 'spark');
+  assert.equal(pkg.name, '@adityaaria/spark');
   assert.ok(pkg.keywords.includes('pi-package'));
   assert.deepEqual(pkg.pi.skills, ['./skills']);
   assert.deepEqual(pkg.pi.extensions, ['./.pi/extensions/spark.ts']);

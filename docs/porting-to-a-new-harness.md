@@ -4,9 +4,8 @@ This guide explains how to add support for a new harness — an IDE, CLI, or
 agent runner that isn't Claude Code — so that SPARK skills auto-trigger
 there the same way they do natively.
 
-For end users, the preferred front door is now `npx spark install`; the
-CLI detects the harness or asks which one to target, then delegates to the
-appropriate adapter.
+For end users, the preferred front door is now `npx @adityaaria/spark install`; the
+CLI asks which harness to target, then delegates to the appropriate adapter.
 
 It is written in two layers. **Part 1–3** explain how the system works and how
 to tell whether a harness can be supported at all; read these before you touch

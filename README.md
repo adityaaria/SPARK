@@ -25,10 +25,10 @@ Installation differs by harness. If you use more than one, install SPARK separat
 
 ### NPM Meta-Installer
 
-If you want one command that detects the harness or asks you which one you are using, run:
+If you want one command that asks which harness you are using, run:
 
 ```bash
-npx spark install
+npx @adityaaria/spark install
 ```
 
 You can force a specific harness with `--harness <name>` if you already know it.

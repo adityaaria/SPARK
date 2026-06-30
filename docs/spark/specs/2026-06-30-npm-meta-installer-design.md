@@ -1,6 +1,6 @@
 # NPM Meta-Installer Design
 
-**Goal:** Add a single npm-driven installer entrypoint so a user can run `npx spark install`, have the tool detect or ask for the active harness, and then install the correct SPARK adapter for that harness.
+**Goal:** Add a single npm-driven installer entrypoint so a user can run `npx @adityaaria/spark install`, have the tool detect or ask for the active harness, and then install the correct SPARK adapter for that harness.
 
 ## Problem
 
@@ -70,7 +70,7 @@ That keeps harness-specific logic isolated and makes it possible to add a new ha
 Primary command:
 
 ```bash
-npx spark install
+npx @adityaaria/spark install
 ```
 
 Expected flow:
@@ -201,7 +201,7 @@ The tests should verify that the installer reuses the committed repo artifacts r
 
 This design is complete when:
 
-- `npx spark install` exists as the primary entrypoint.
+- `npx @adityaaria/spark install` exists as the primary entrypoint.
 - The CLI can select all supported harnesses either automatically or by prompt.
 - Each supported harness has a dedicated adapter.
 - The installer does not rewrite skill bodies.

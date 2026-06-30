@@ -17,7 +17,7 @@ Go to `Marketplace` > `SPARK` and install it.
 If you prefer the new npm front door, you can also run:
 
 ```text
-npx spark install --harness kimi
+npx @adityaaria/spark install --harness kimi
 ```
 
 You can also install from this repository:

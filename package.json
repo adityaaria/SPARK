@@ -1,8 +1,11 @@
 {
-  "name": "spark",
+  "name": "@adityaaria/spark",
   "version": "6.0.3",
   "description": "SPARK skills and runtime bootstrap for coding agents",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "spark": "bin/spark.js"
   },

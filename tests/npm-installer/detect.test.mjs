@@ -75,13 +75,54 @@ test('ambiguous detection asks the user to choose', async () => {
   assert.equal(choice.source, 'prompt');
 });
 
-test('no candidates produces a short actionable failure', async () => {
-  await assert.rejects(
-    chooseHarness({
-      env: { PATH: '' },
-      fs: fakeFs(),
-      prompt: async () => 'q',
-    }),
-    /Could not detect a supported harness/
-  );
+test('install without forced harness always prompts even with a strong detection signal', async () => {
+  const chooser = fakePrompt('gemini');
+  const choice = await chooseHarness({
+    env: {
+      PATH: '/tmp/bin',
+      GOOGLE_GEMINI_CLI: '1',
+    },
+    fs: fakeFs(new Set(['/tmp/bin/gemini'])),
+    prompt: chooser.prompt,
+  });
+
+  assert.equal(chooser.calls.length, 1);
+  assert.match(chooser.calls[0], /AI assistance/i);
+  assert.match(chooser.calls[0], /Gemini CLI/);
+  assert.match(chooser.calls[0], /Codex/);
+  assert.equal(choice.adapter.id, 'gemini');
+  assert.equal(choice.source, 'prompt');
+});
+
+test('no detection signals still prompts with the full harness list', async () => {
+  const chooser = fakePrompt('1');
+  const choice = await chooseHarness({
+    env: { PATH: '' },
+    fs: fakeFs(),
+    prompt: chooser.prompt,
+  });
+
+  assert.equal(chooser.calls.length, 1);
+  assert.match(chooser.calls[0], /AI assistance/i);
+  assert.match(chooser.calls[0], /Claude Code/);
+  assert.match(chooser.calls[0], /Gemini CLI/);
+  assert.equal(choice.source, 'prompt');
+  assert.ok(choice.adapter);
+});
+
+test('invalid prompt answer asks again until the user picks a supported harness', async () => {
+  const answers = ['99', 'codex'];
+  const calls = [];
+  const choice = await chooseHarness({
+    env: { PATH: '' },
+    fs: fakeFs(),
+    prompt: async (question) => {
+      calls.push(question);
+      return answers.shift();
+    },
+  });
+
+  assert.equal(calls.length, 2);
+  assert.equal(choice.adapter.id, 'codex');
+  assert.equal(choice.source, 'prompt');
 });

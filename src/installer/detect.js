@@ -4,9 +4,6 @@ import path from 'node:path';
 import { getAdapterById, listAdapters } from './registry.js';
 import { InstallerError } from './errors.js';
 
-const HIGH_CONFIDENCE_SCORE = 80;
-const AMBIGUOUS_MARGIN = 20;
-
 export function detectHarnessCandidates({ env = process.env, fsImpl = fs } = {}) {
   const homeDir = os.homedir();
   const adapters = listAdapters();
@@ -31,25 +28,22 @@ export async function chooseHarness({
     return { adapter, source: 'forced', candidates: [] };
   }
 
-  const candidates = detectHarnessCandidates({ env, fsImpl: fs });
-  if (candidates.length === 0) {
-    throw new InstallerError(
-      `Could not detect a supported harness. Supported harnesses: ${listAdapters().map((adapter) => adapter.label).join(', ')}`
-    );
-  }
-
-  if (isConfident(candidates)) {
-    const adapter = getAdapterById(candidates[0].id);
-    return { adapter, source: 'auto', candidates };
-  }
-
   if (!prompt) {
-    throw new InstallerError(`Multiple harnesses look plausible: ${candidates.map((candidate) => candidate.label).join(', ')}`);
+    throw new InstallerError('No harness selected. Re-run with --harness or use an interactive terminal.');
   }
 
-  const answer = await prompt(renderPrompt(candidates));
-  const adapter = resolvePromptAnswer(answer, candidates);
-  return { adapter, source: 'prompt', candidates };
+  const detectedCandidates = detectHarnessCandidates({ env, fsImpl: fs });
+  const candidates = buildPromptCandidates(detectedCandidates);
+
+  let validationMessage = null;
+  while (true) {
+    const answer = await prompt(renderPrompt(candidates, validationMessage));
+    const adapter = resolvePromptAnswer(answer, candidates);
+    if (adapter) {
+      return { adapter, source: 'prompt', candidates };
+    }
+    validationMessage = `Unsupported choice: ${answer || '(empty)'}. Please choose a number or harness name from the list.`;
+  }
 }
 
 function scoreAdapter(adapter, env, fsImpl, homeDir) {
@@ -94,12 +88,16 @@ function candidateConfigPaths(homeDir, env, configPath) {
     paths.push(path.join(env.OPENCODE_CONFIG_DIR, 'opencode.json'));
   }
   if (configPath === 'GEMINI.md') {
-    paths.push(path.join(homeDir, '.gemini', 'GEMINI.md'));
-    paths.push(path.join(homeDir, 'GEMINI.md'));
+    paths.push(
+      path.join(homeDir, '.gemini', 'GEMINI.md'),
+      path.join(homeDir, 'GEMINI.md')
+    );
   }
   if (configPath === 'gemini-extension.json') {
-    paths.push(path.join(homeDir, 'gemini-extension.json'));
-    paths.push(path.join(homeDir, '.gemini', 'gemini-extension.json'));
+    paths.push(
+      path.join(homeDir, 'gemini-extension.json'),
+      path.join(homeDir, '.gemini', 'gemini-extension.json')
+    );
   }
   return paths;
 }
@@ -130,15 +128,27 @@ function commandExists(commandName, env, fsImpl) {
   return false;
 }
 
-function isConfident(candidates) {
-  if (candidates[0].score < HIGH_CONFIDENCE_SCORE) return false;
-  if (candidates.length === 1) return true;
-  return candidates[0].score - candidates[1].score >= AMBIGUOUS_MARGIN;
+function buildPromptCandidates(detectedCandidates) {
+  const allAdapters = listAdapters();
+  const detectedIds = new Set(detectedCandidates.map((candidate) => candidate.id));
+
+  return [
+    ...detectedCandidates,
+    ...allAdapters
+      .filter((adapter) => !detectedIds.has(adapter.id))
+      .map((adapter) => ({
+        id: adapter.id,
+        label: adapter.label,
+        score: 0,
+        reasons: [],
+      })),
+  ];
 }
 
-function renderPrompt(candidates) {
+function renderPrompt(candidates, validationMessage = null) {
   return [
-    'Choose the harness to install SPARK for:',
+    ...(validationMessage ? [validationMessage] : []),
+    'Install SPARK for which AI assistance?',
     ...candidates.map((candidate, index) => `${index + 1}. ${candidate.label} (${candidate.id})`),
     'Enter a number or harness name:',
   ].join('\n');
@@ -146,9 +156,7 @@ function renderPrompt(candidates) {
 
 function resolvePromptAnswer(answer, candidates) {
   const value = normalizeHarness(answer);
-  if (!value) {
-    throw new InstallerError('No harness selected.');
-  }
+  if (!value) return null;
 
   const numeric = Number(value);
   if (Number.isInteger(numeric) && numeric >= 1 && numeric <= candidates.length) {
@@ -156,9 +164,7 @@ function resolvePromptAnswer(answer, candidates) {
   }
 
   const exact = candidates.find((candidate) => candidate.id === value || candidate.label.toLowerCase() === value);
-  if (!exact) {
-    throw new InstallerError(`Unsupported harness choice: ${answer}`);
-  }
+  if (!exact) return null;
 
   return getAdapterById(exact.id);
 }

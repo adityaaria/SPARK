@@ -25,7 +25,7 @@ function runCli(args, env = {}) {
 test('package.json exposes the CLI binary', async () => {
   const pkg = await readPackageJson();
 
-  assert.equal(pkg.name, 'spark');
+  assert.equal(pkg.name, '@adityaaria/spark');
   assert.ok(pkg.bin, 'expected package.json to declare a bin field');
   assert.equal(pkg.bin.spark, 'bin/spark.js');
 });
@@ -34,7 +34,8 @@ test('CLI prints install help', () => {
   const result = runCli(['--help']);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /npx spark install/);
+  assert.match(result.stdout, /npx @adityaaria\/spark install/);
+  assert.match(result.stdout, /ask which AI assistance to target/i);
   assert.match(result.stdout, /--harness/);
   assert.match(result.stdout, /--dry-run/);
 });

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use spark:subagent-driven-development (recommended) or spark:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let a user run `npx spark install` once, have the CLI detect or ask for the active harness, and install the correct SPARK adapter for that harness.
+**Goal:** Let a user run `npx @adityaaria/spark install` once, have the CLI detect or ask for the active harness, and install the correct SPARK adapter for that harness.
 
 **Architecture:** The npm package becomes a thin orchestrator. Shared behavior stays in the existing skills and harness references, while a new CLI layer handles detection, selection, adapter dispatch, and verification. Each harness gets an adapter with the same install contract so the implementation stays isolated and testable.
 
@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- `npx spark install` is the primary entrypoint.
+- `npx @adityaaria/spark install` is the primary entrypoint.
 - The CLI may auto-detect the harness, but it must prompt when detection is ambiguous.
 - Supported harnesses in this release: Claude Code, Cursor, Antigravity, GitHub Copilot CLI, OpenCode, Gemini CLI, and Pi.
 - The installer must not rewrite skill bodies to fit one harness.
@@ -334,7 +334,7 @@ Expected: fail until the CLI flow is wired end to end.
 Add a short top-level section that tells users:
 
 ```bash
-npx spark install
+npx @adityaaria/spark install
 ```
 
 and explains that the CLI will either auto-detect or ask for the harness.

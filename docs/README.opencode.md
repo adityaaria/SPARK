@@ -19,7 +19,7 @@ If you want a single front door that can detect or ask for the harness before
 installing, run:
 
 ```bash
-npx spark install --harness opencode
+npx @adityaaria/spark install --harness opencode
 ```
 
 Verify by asking: "Tell me about your spark"

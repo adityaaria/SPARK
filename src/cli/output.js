@@ -5,7 +5,9 @@ export function printLine(text = '') {
 export function printHelp() {
   printLine('SPARK npm installer');
   printLine('');
-  printLine('Usage: npx spark install [--harness <name>] [--dry-run] [--yes] [--verbose]');
+  printLine('Usage: npx @adityaaria/spark install [--harness <name>] [--dry-run] [--yes] [--verbose]');
+  printLine('');
+  printLine('Without --harness, the installer will ask which AI assistance to target.');
   printLine('');
   printLine('Supported harnesses: Codex, Cursor, Antigravity, Copilot, OpenCode, Gemini, Pi');
 }
