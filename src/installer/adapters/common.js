@@ -8,52 +8,86 @@ export function createAdapter({
   bootstrap,
   installHint,
   verifyHint,
+  successMessage = `Installed SPARK for ${label}.`,
   command = null,
+  commands = [],
+  customInstall = null,
+  manualSteps = [],
+  automatedSteps = [],
   envKeys = [],
   binaryNames = [],
   configPaths = [],
 }) {
+  const commandList = normalizeCommandList(commands, command);
+  const automated = commandList.length > 0 || typeof customInstall === 'function';
+
   return {
     id,
     label,
     envKeys,
     binaryNames,
     configPaths,
-    command,
+    command: commandList[0] ?? null,
+    commands: commandList,
+    manualSteps,
     planInstall() {
       return {
         kind,
         bootstrap,
         installHint,
         verifyHint,
-        command,
+        successMessage,
+        command: commandList[0] ?? null,
+        commands: commandList,
+        manualSteps,
+        automatedSteps,
+        automated,
       };
     },
-    async install({ runner = spawnSync, dryRun = false } = {}) {
+    async install({ runner = spawnSync, dryRun = false, cwd = process.cwd(), env = process.env, fs = null } = {}) {
       if (dryRun) {
-        return this.planInstall();
+        return { plan: this.planInstall(), metadata: {} };
       }
 
-      if (!command) {
+      if (!automated) {
         throw new InstallerError(`${label} install is not fully automatable yet.`);
       }
 
-      const result = runner(command.file, command.args ?? [], {
-        cwd: command.cwd ?? process.cwd(),
-        env: command.env ?? process.env,
-        encoding: 'utf8',
-      });
-
-      if (result.status !== 0) {
-        throw new InstallerError(
-          `${label} install failed: ${result.stderr || result.stdout || 'unknown error'}`
-        );
+      if (typeof customInstall === 'function') {
+        const metadata = await customInstall({ cwd, env, fs });
+        return { plan: this.planInstall(), metadata: metadata ?? {} };
       }
 
-      return this.planInstall();
+      for (const entry of commandList) {
+        const result = runner(entry.file, entry.args ?? [], {
+          cwd: entry.cwd ?? cwd,
+          env: entry.env ?? env,
+          encoding: 'utf8',
+        });
+
+        if (result.status !== 0) {
+          throw new InstallerError(
+            `${label} install failed: ${result.stderr || result.stdout || 'unknown error'}`
+          );
+        }
+      }
+
+      return { plan: this.planInstall(), metadata: {} };
     },
     async verify() {
       return verifyHint;
     },
   };
+}
+
+function normalizeCommandList(commands, command) {
+  if (Array.isArray(commands) && commands.length > 0) {
+    return commands;
+  }
+
+  if (command) {
+    return [command];
+  }
+
+  return [];
 }

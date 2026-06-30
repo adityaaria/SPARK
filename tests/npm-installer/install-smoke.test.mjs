@@ -20,6 +20,7 @@ test('installer smoke test prints a concrete dry-run plan', () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Pi/);
-  assert.match(result.stdout, /selection source forced/);
+  assert.match(result.stdout, /Selection: forced/);
   assert.match(result.stdout, /using-spark/);
+  assert.match(result.stdout, /\[1\/1\] pi install git:github\.com\/adityaaria\/SPARK/);
 });

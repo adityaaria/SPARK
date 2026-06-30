@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { formatPromptBlock, promptOption } from '../cli/output.js';
 import { getAdapterById, listAdapters } from './registry.js';
 import { InstallerError } from './errors.js';
 
@@ -146,12 +147,31 @@ function buildPromptCandidates(detectedCandidates) {
 }
 
 function renderPrompt(candidates, validationMessage = null) {
-  return [
-    ...(validationMessage ? [validationMessage] : []),
-    'Install SPARK for which AI assistance?',
-    ...candidates.map((candidate, index) => `${index + 1}. ${candidate.label} (${candidate.id})`),
-    'Enter a number or harness name:',
-  ].join('\n');
+  const lines = [];
+
+  if (validationMessage) {
+    lines.push(validationMessage);
+    lines.push('');
+  }
+
+  const detectedCount = candidates.filter((candidate) => candidate.score > 0).length;
+  const recommendedIds = new Set(candidates.filter((candidate) => candidate.score > 0).map((candidate) => candidate.id));
+
+  if (detectedCount > 0) {
+    lines.push('Recommended from your current environment:');
+    lines.push('');
+  }
+
+  for (const [index, candidate] of candidates.entries()) {
+    const hint = recommendedIds.has(candidate.id) ? 'recommended' : null;
+    lines.push(promptOption(index + 1, candidate.label, candidate.id, hint));
+  }
+
+  return formatPromptBlock(
+    'Install SPARK',
+    lines,
+    'Enter a number or harness name.'
+  );
 }
 
 function resolvePromptAnswer(answer, candidates) {
