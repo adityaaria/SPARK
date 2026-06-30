@@ -78,7 +78,7 @@ export function createVsCodeAdapter() {
     label: 'VS Code',
     kind: 'shell-hook',
     bootstrap: 'workspace plugin bundle -> VS Code chat.pluginLocations -> hooks/session-start -> using-spark',
-    installHint: 'A Claude-compatible plugin bundle is staged locally and registered through .vscode/settings.json chat.pluginLocations.',
+    installHint: 'A standard plugin bundle is staged locally and registered through .vscode/settings.json chat.pluginLocations.',
     verifyHint: 'Open a fresh VS Code agent session and confirm using-spark loads before coding.',
     successMessage: 'SPARK is ready in VS Code.',
     automatedSteps: [

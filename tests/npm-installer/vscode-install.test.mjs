@@ -25,7 +25,7 @@ test('vscode install stages a local plugin bundle and registers it in workspace 
     assert.equal(result.metadata.relativeSettingsPath, path.join('.vscode', 'settings.json'));
     assert.deepEqual(calls, []);
 
-    assert.equal(fs.existsSync(path.join(targetRoot, '.claude-plugin', 'plugin.json')), true);
+    assert.equal(fs.existsSync(path.join(targetRoot, '.vscode-plugin', 'plugin.json')), true);
     assert.equal(fs.existsSync(path.join(targetRoot, 'hooks', 'hooks.json')), true);
     assert.equal(fs.existsSync(path.join(targetRoot, 'hooks', 'run-hook.cmd')), true);
     assert.equal(fs.existsSync(path.join(targetRoot, 'hooks', 'session-start')), true);

@@ -276,7 +276,7 @@ MIT License - see LICENSE file for details
 
 ## Community
 
-SPARK is built by [Jesse Vincent](https://blog.fsck.com) and contributors.
+SPARK is built by [Aditya Aria](https://blog.fsck.com) and contributors.
 
 - **Community**: Use the repository issues and discussions for support, questions, and sharing what you're building with SPARK
 - **Issues**: https://github.com/adityaaria/SPARK/issues
