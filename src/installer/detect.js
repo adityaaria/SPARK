@@ -33,8 +33,9 @@ export async function chooseHarness({
     throw new InstallerError('No harness selected. Re-run with --harness or use an interactive terminal.');
   }
 
+  const homeDir = os.homedir();
   const detectedCandidates = detectHarnessCandidates({ env, fsImpl: fs });
-  const candidates = buildPromptCandidates(detectedCandidates);
+  const candidates = buildPromptCandidates(detectedCandidates, env, fs, homeDir);
 
   let validationMessage = null;
   while (true) {
@@ -51,6 +52,8 @@ function scoreAdapter(adapter, env, fsImpl, homeDir) {
   let score = 0;
   const reasons = [];
 
+  let missingBinaries = false;
+
   for (const key of adapter.envKeys) {
     if (env[key]) {
       score += 100;
@@ -58,10 +61,15 @@ function scoreAdapter(adapter, env, fsImpl, homeDir) {
     }
   }
 
-  for (const binaryName of adapter.binaryNames) {
-    if (commandExists(binaryName, env, fsImpl)) {
-      score += 70;
-      reasons.push(`path:${binaryName}`);
+  if (adapter.binaryNames && adapter.binaryNames.length > 0) {
+    missingBinaries = true;
+    for (const binaryName of adapter.binaryNames) {
+      if (commandExists(binaryName, env, fsImpl)) {
+        score += 70;
+        reasons.push(`path:${binaryName}`);
+        missingBinaries = false;
+        break;
+      }
     }
   }
 
@@ -80,6 +88,7 @@ function scoreAdapter(adapter, env, fsImpl, homeDir) {
     label: adapter.label,
     score,
     reasons,
+    missingBinaries,
   };
 }
 
@@ -129,7 +138,7 @@ function commandExists(commandName, env, fsImpl) {
   return false;
 }
 
-function buildPromptCandidates(detectedCandidates) {
+function buildPromptCandidates(detectedCandidates, env, fsImpl, homeDir) {
   const allAdapters = listAdapters();
   const detectedIds = new Set(detectedCandidates.map((candidate) => candidate.id));
 
@@ -137,12 +146,12 @@ function buildPromptCandidates(detectedCandidates) {
     ...detectedCandidates,
     ...allAdapters
       .filter((adapter) => !detectedIds.has(adapter.id))
-      .map((adapter) => ({
-        id: adapter.id,
-        label: adapter.label,
-        score: 0,
-        reasons: [],
-      })),
+      .map((adapter) => {
+        const result = scoreAdapter(adapter, env, fsImpl, homeDir);
+        result.score = 0;
+        result.reasons = [];
+        return result;
+      }),
   ];
 }
 
@@ -163,14 +172,19 @@ function renderPrompt(candidates, validationMessage = null) {
   }
 
   for (const [index, candidate] of candidates.entries()) {
+    let label = candidate.label;
+    if (candidate.missingBinaries) {
+      label += ' [Missing CLI]';
+    }
+
     const hint = recommendedIds.has(candidate.id) ? 'recommended' : null;
     lines.push(
       promptOption(
         index + 1,
-        candidate.label,
+        label,
         candidate.id,
         hint,
-        describeHarness(candidate.id)
+        describeHarness(candidate.id, candidate.missingBinaries)
       )
     );
   }
@@ -197,7 +211,7 @@ function resolvePromptAnswer(answer, candidates) {
   return getAdapterById(exact.id);
 }
 
-function describeHarness(id) {
+function describeHarness(id, missingBinaries = false) {
   const descriptions = {
     claude: 'Best for Claude Code sessions and project-local plugin workflows.',
     codex: 'For the Codex CLI plugin marketplace flow in terminal sessions.',
@@ -210,7 +224,12 @@ function describeHarness(id) {
     antigravity: 'Installs the Antigravity plugin and loads SPARK on new sessions.',
   };
 
-  return descriptions[id] ?? null;
+  let description = descriptions[id] ?? null;
+  if (description && missingBinaries) {
+    description += '\n   ⚠️  Requires its official CLI to be installed first.';
+  }
+
+  return description;
 }
 
 function normalizeHarness(value) {

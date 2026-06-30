@@ -66,6 +66,18 @@ export function createAdapter({
           encoding: 'utf8',
         });
 
+        if (result.error) {
+          if (result.error.code === 'ENOENT') {
+            throw new InstallerError(
+              `\n\u2715 ${label} install failed: Command '${entry.file}' not found.\n` +
+              `SPARK requires ${label} to be installed first.\n` +
+              `Please install ${label} from its official source (e.g. npm install -g <package-name>)\n` +
+              `and ensure '${entry.file}' is in your PATH before retrying.\n`
+            );
+          }
+          throw new InstallerError(`${label} install failed: ${result.error.message}`);
+        }
+
         if (result.status !== 0) {
           throw new InstallerError(
             `${label} install failed: ${result.stderr || result.stdout || 'unknown error'}`
