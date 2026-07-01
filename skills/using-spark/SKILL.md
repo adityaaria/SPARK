@@ -54,7 +54,7 @@ Skills speak in actions ("dispatch a subagent", "create a todo", "read a file") 
 
 **Invoke relevant or requested skills BEFORE any response or action.** Even a 1% chance a skill might apply means that you should invoke the skill to check. If an invoked skill turns out to be wrong for the situation, you don't need to use it.
 
-**CRITICAL:** If the user mentions a specific skill by name (e.g., "scan project", "project-scanner", "run deployment"), you MUST invoke that skill IMMEDIATELY as your very first tool call. Do not answer conversationally. Do not ask for confirmation. Execute the skill first.
+**CRITICAL:** If the user's prompt matches the purpose of ANY existing skill, or mentions a skill by name, you MUST invoke that skill IMMEDIATELY as your very first tool call. Do not answer conversationally. Do not ask for confirmation. Execute the skill first.
 
 ## Announcement Format
 When you invoke a skill, you MUST announce it to the developer using exactly this format as the very first thing you say:
