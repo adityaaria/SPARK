@@ -15,12 +15,11 @@ function runCli(args) {
   });
 }
 
-test('installer smoke test prints a concrete dry-run plan', () => {
-  const result = runCli(['install', '--dry-run', '--harness', 'pi']);
+test('installer smoke test prints a concrete dry-run plan via bash installer', () => {
+  const result = runCli(['install', '--dry-run']);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Pi/);
-  assert.match(result.stdout, /Selection: forced/);
+  assert.match(result.stdout, /SPARK Native Installer/i);
   assert.match(result.stdout, /using-spark/);
-  assert.match(result.stdout, /\[1\/1\] pi install git:github\.com\/adityaaria\/SPARK/);
+  assert.match(result.stdout, /\[DRY-RUN\] Would install for/);
 });

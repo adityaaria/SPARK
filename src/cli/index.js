@@ -1,26 +1,20 @@
-import { parseArgs } from './parse-args.js';
 import { printHelp, printLine } from './output.js';
 import { runInstall } from './install.js';
 
-export async function run(argv, env) {
-  const options = parseArgs(argv);
-
-  if (options.help || options.command === 'help') {
+export async function run(argv = [], env = process.env) {
+  if (argv.length === 0 || argv[0] === '--help' || argv[0] === '-h' || argv[0] === 'help') {
     printHelp();
     return;
   }
 
-  if (!options.command) {
-    printHelp();
+  const [command, ...args] = argv;
+
+  if (command === 'install') {
+    await runInstall(args, env);
     return;
   }
 
-  if (options.command === 'install') {
-    await runInstall(options, env);
-    return;
-  }
-
-  throw new Error(`Unknown command: ${options.command}`);
+  throw new Error(`Unknown command: ${command}`);
 }
 
 export { printLine };

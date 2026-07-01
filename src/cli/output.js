@@ -20,11 +20,14 @@ export function printLine(text = '') {
 
 export function printHelp() {
   printCommandHeader('Install');
-  printLine(labelValue('Usage', 'npx @adityaaria/spark install [--harness <name>] [--dry-run] [--yes] [--verbose]'));
+  printLine(labelValue('Usage', 'npx @adityaaria/spark install [options]'));
   printLine('');
-  printMuted('Without --harness, the installer will ask which AI assistance to target.');
+  printMuted('Wraps the native SPARK installer (bin/spark-install.sh).');
   printLine('');
-  printLine(labelValue('Supported', 'Claude Code, Codex CLI, VS Code, Cursor, Copilot CLI, OpenCode, Gemini CLI, Pi, Antigravity'));
+  printLine(labelValue('Options', '-g, --global    Install to global agent config (~/.agent/skills/)'));
+  printLine(labelValue('       ', '--force         Re-install even if already installed'));
+  printLine(labelValue('       ', '--dry-run       Show what would be done without making changes'));
+  printLine(labelValue('       ', '-h, --help      Show this help message'));
 }
 
 export function printCommandHeader(title) {

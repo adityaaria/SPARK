@@ -23,15 +23,39 @@ There's a bunch more to it, but that's the core of the system. And because the s
 
 Installation differs by harness. If you use more than one, install SPARK separately for each one.
 
+### Native Installer (Recommended)
+
+The native installer auto-detects which coding agents you have installed and sets up SPARK for all of them — skills AND hooks — with zero external dependencies.
+
+**From a fresh clone:**
+
+```bash
+git clone https://github.com/adityaaria/SPARK.git && cd SPARK && bash bin/spark-install.sh
+```
+
+**If you already have the repo cloned:**
+
+```bash
+bash bin/spark-install.sh
+```
+
+**Global install** (applies to all projects):
+
+```bash
+bash bin/spark-install.sh -g
+```
+
+The installer creates symlinks from the repo's `skills/` directory to each agent's config, so future `git pull` updates are picked up automatically. Run `bash bin/spark-install.sh --help` for all options.
+
 ### NPM Meta-Installer
 
-If you want one command that asks which harness you are using, run:
+Alternative if you prefer using npm (requires Node.js). This command acts as a thin wrapper around the native installer (`bin/spark-install.sh`), executing the exact same bash script and supporting the same options:
 
 ```bash
 npx @adityaaria/spark install
+npx @adityaaria/spark install -g       # Install to global agent config
+npx @adityaaria/spark install --force  # Re-install over existing installations
 ```
-
-You can force a specific harness with `--harness <name>` if you already know it.
 
 ### Claude Code
 

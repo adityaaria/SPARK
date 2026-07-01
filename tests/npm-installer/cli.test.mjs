@@ -35,30 +35,24 @@ test('CLI prints install help', () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /npx @adityaaria\/spark install/);
-  assert.match(result.stdout, /ask which AI assistance to target/i);
-  assert.match(result.stdout, /--harness/);
+  assert.match(result.stdout, /Wraps the native SPARK installer/i);
+  assert.match(result.stdout, /--global/);
   assert.match(result.stdout, /--dry-run/);
 });
 
-test('CLI dry-run can target a harness without touching the filesystem', () => {
-  const result = runCli(['install', '--dry-run', '--harness', 'codex']);
+test('CLI dry-run forwards to spark-install.sh without touching filesystem', () => {
+  const result = runCli(['install', '--dry-run']);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /codex/i);
-  assert.match(result.stdout, /dry-run/i);
-  assert.match(result.stdout, /Harness: Codex CLI \(codex\)/);
-  assert.match(result.stdout, /Stage a local Codex marketplace/);
-  assert.match(result.stdout, /codex plugin marketplace add \.\/\.spark\/codex-marketplace/);
-  assert.match(result.stdout, /Verify hint:/);
+  assert.match(result.stdout, /SPARK Native Installer/i);
+  assert.match(result.stdout, /\[DRY-RUN\] Would install for/i);
+  assert.match(result.stdout, /\[DRY-RUN\] Would write lock file/i);
 });
 
-test('CLI dry-run can target VS Code and auto-register the local plugin bundle', () => {
-  const result = runCli(['install', '--dry-run', '--harness', 'vscode']);
+test('CLI forwards flags like -g to spark-install.sh', () => {
+  const result = runCli(['install', '-g', '--dry-run']);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Harness: VS Code \(vscode\)/);
-  assert.match(result.stdout, /Prepare a local VS Code plugin bundle/);
-  assert.match(result.stdout, /Bundle path: .*\.spark\/vscode-plugin/);
-  assert.match(result.stdout, /chat\.pluginLocations/);
-  assert.doesNotMatch(result.stdout, /codex plugin marketplace add/);
+  assert.match(result.stdout, /SPARK Native Installer/i);
+  assert.match(result.stdout, /Scope:\s+global/i);
 });
