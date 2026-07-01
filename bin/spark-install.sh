@@ -421,15 +421,8 @@ get_target_dir() {
     esac
   else
     # Project scope: relative to current working directory
-    case "$agent_id" in
-      claude)   echo "$(pwd)/.claude" ;;
-      codex)    echo "$(pwd)/.codex" ;;
-      cursor)   echo "$(pwd)/.cursor" ;;
-      kimi)     echo "$(pwd)/.kimi" ;;
-      opencode) echo "$(pwd)/.opencode" ;;
-      pi)       echo "$(pwd)/.pi" ;;
-      *)        echo "$(pwd)/.$agent_id" ;;
-    esac
+    # Modern AI agents (Codex, Gemini, Antigravity, etc.) use .agents as the universal workspace customization root.
+    echo "$(pwd)/.agents"
   fi
 }
 
