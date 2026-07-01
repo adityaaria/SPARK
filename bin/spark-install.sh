@@ -620,10 +620,6 @@ install_for_agent() {
         *)
           # Shell-hook agents: copy manifest to agent-plugin dir
           local plugin_dir="$target_dir/.${agent_id}-plugin"
-          # For project scope, put manifest in the target dir itself
-          if [ "$SCOPE" = "project" ]; then
-            plugin_dir="$(pwd)/.${agent_id}-plugin"
-          fi
           if [ -f "$source_path" ]; then
             mkdir -p "$plugin_dir"
             copy_file "$source_path" "$plugin_dir/$manifest_basename"
