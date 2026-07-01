@@ -3,204 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPARK | Command Center</title>
+    <title>SPARK | Command Center v2</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Mermaid.js for Diagrams -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <!-- Vis-Network for Interactive Graphs -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- Chart.js for Heatmap -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --accent-glow: rgba(0, 255, 170, 0.15);
-            --accent: #00ffaa;
-            --danger: #ff4757;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
+            --bg-color: #0d0d0d;
+            --panel-bg: #151515;
+            --glass-border: #2a2a2a;
+            --accent: #dcedc1; /* Sage green from reference */
+            --accent-dark: #b8c99d;
+            --danger: #ff5e57;
+            --warning: #ffb86c;
+            --text-main: #f4f4f4;
+            --text-muted: #888888;
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-main);
             background-color: var(--bg-color);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
-            background-image: 
-                radial-gradient(circle at 15% 50%, var(--accent-glow), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(255, 71, 87, 0.1), transparent 25%);
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Sidebar */
         .sidebar {
             width: 280px;
-            background: var(--glass-bg);
+            background: var(--bg-color);
             border-right: 1px solid var(--glass-border);
-            backdrop-filter: blur(12px);
-            padding: 24px;
+            padding: 32px 24px;
             display: flex;
             flex-direction: column;
         }
 
         .logo {
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            margin-bottom: 40px;
+            font-size: 20px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            margin-bottom: 48px;
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-
-        .logo span {
-            color: var(--accent);
-        }
-
-        .nav-item {
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .nav-item:hover {
-            background: rgba(255,255,255,0.05);
+            gap: 12px;
             color: var(--text-main);
         }
 
+        .logo svg { stroke: var(--text-main); }
+        .logo span { color: var(--text-muted); font-weight: 300; }
+
+        .nav-section { margin-bottom: 32px; }
+        .nav-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            padding-left: 12px;
+        }
+
+        .nav-item {
+            padding: 10px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover { color: var(--text-main); }
         .nav-item.active {
-            background: rgba(0, 255, 170, 0.1);
-            color: var(--accent);
-            border: 1px solid rgba(0, 255, 170, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
         }
 
         /* Main Content */
         .content {
             flex: 1;
-            padding: 40px;
+            padding: 48px;
             overflow-y: auto;
             height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
+            align-items: flex-end;
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .header h1 {
-            font-size: 32px;
-            font-weight: 700;
-        }
-
+        .header h1 { font-size: 28px; font-weight: 400; letter-spacing: -0.5px; }
+        
         .status-badge {
-            background: rgba(0, 255, 170, 0.1);
-            color: var(--accent);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            border: 1px solid rgba(0, 255, 170, 0.2);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 12px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
-
         .status-badge::before {
-            content: '';
-            display: block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
+            content: ''; display: block; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--text-muted); 
         }
+        .status-badge.active::before { background: var(--accent); }
 
-        /* Cards / Panels */
         .panel {
-            background: var(--glass-bg);
+            background: var(--panel-bg); 
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border-radius: 12px; 
+            padding: 32px; 
+            margin-bottom: 24px;
             animation: fadeIn 0.4s ease forwards;
+            flex: 1;
         }
+        
+        .panel h2 { font-weight: 400; margin-bottom: 8px; font-size: 20px; }
+        .panel p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Markdown Styling */
-        .markdown-body {
-            line-height: 1.6;
-        }
-        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
-            margin-top: 24px;
-            margin-bottom: 16px;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-        .markdown-body h1 { font-size: 28px; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; }
-        .markdown-body h2 { font-size: 22px; }
-        .markdown-body p { margin-bottom: 16px; color: var(--text-muted); }
-        .markdown-body ul, .markdown-body ol { margin-bottom: 16px; padding-left: 24px; color: var(--text-muted); }
-        .markdown-body li { margin-bottom: 8px; }
-        .markdown-body code {
-            background: rgba(0,0,0,0.3);
-            padding: 3px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 14px;
-            color: #ff9e64;
-        }
-        .markdown-body pre {
-            background: #111520;
-            padding: 16px;
-            border-radius: 8px;
-            overflow-x: auto;
+        /* Widgets / Cards (Reference Style) */
+        .widget-row { display: flex; gap: 24px; margin-bottom: 24px; }
+        .widget {
+            flex: 1;
+            background: var(--panel-bg);
             border: 1px solid var(--glass-border);
-            margin-bottom: 16px;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
         }
-        .markdown-body pre code {
-            background: none;
-            padding: 0;
-            color: #f1f5f9;
+        .widget-value {
+            font-family: var(--font-mono);
+            font-size: 42px;
+            font-weight: 300;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            letter-spacing: -1px;
         }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
+        .widget-label {
+            font-size: 12px;
             color: var(--text-muted);
         }
-        .empty-state h3 { margin-bottom: 10px; color: var(--text-main); }
-        .empty-state p { margin-bottom: 20px; }
-        .btn {
-            background: var(--text-main);
-            color: var(--bg-color);
+        
+        .widget.accent-card {
+            background: var(--accent);
             border: none;
-            padding: 10px 24px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.1s ease;
+            color: #111;
         }
-        .btn:hover { transform: scale(1.05); }
+        .widget.accent-card .widget-value,
+        .widget.accent-card .widget-label { color: #111; font-weight: 500; }
+
+        /* Markdown Styling */
+        .markdown-body { line-height: 1.6; font-size: 15px; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { margin-top: 32px; margin-bottom: 16px; font-weight: 400; }
+        .markdown-body h1 { font-size: 24px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; }
+        .markdown-body h2 { font-size: 20px; }
+        .markdown-body p { margin-bottom: 16px; color: var(--text-muted); }
+        .markdown-body ul { margin-bottom: 16px; padding-left: 24px; color: var(--text-muted); }
+        .markdown-body code { font-family: var(--font-mono); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+        .markdown-body pre { background: #000; border: 1px solid var(--glass-border); padding: 20px; border-radius: 8px; overflow-x: auto; margin-bottom: 20px; }
+
+        /* Form Styles */
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 13px; }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 14px; border-radius: 8px;
+            background: #0d0d0d; border: 1px solid var(--glass-border);
+            color: var(--text-main); font-family: var(--font-mono); font-size: 14px;
+            transition: border 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--text-muted); }
+        .form-group textarea { min-height: 180px; resize: vertical; }
+        
+        .btn {
+            background: transparent; color: var(--text-main); font-weight: 400;
+            padding: 10px 20px; border-radius: 20px; border: 1px solid var(--glass-border);
+            cursor: pointer; transition: 0.2s; font-size: 13px;
+        }
+        .btn:hover { background: rgba(255,255,255,0.05); border-color: var(--text-muted); }
+        .btn-accent {
+            background: var(--accent); color: #111; border: none; font-weight: 500;
+        }
+        .btn-accent:hover { background: var(--accent-dark); }
+
+        /* Graph & Tree */
+        #network-graph { width: 100%; height: 500px; border: 1px solid var(--glass-border); border-radius: 12px; background: #0d0d0d; }
+        .tree-node { padding: 6px 0; margin-left: 24px; cursor: pointer; color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; }
+        .tree-node:hover { color: var(--text-main); }
+        .tree-node.danger { color: var(--danger); }
+        .tree-node.danger::after { content: ' • FLAG'; font-size: 10px; letter-spacing: 1px; }
+
+        .hidden { display: none !important; }
 
     </style>
 </head>
@@ -208,64 +226,224 @@
 
     <div class="sidebar">
         <div class="logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             SPARK<span>UI</span>
         </div>
-        <div id="nav-container">
-            <!-- Nav items will be injected here -->
+        
+        <div class="nav-section">
+            <div class="nav-title">Views</div>
+            <div class="nav-item active" onclick="switchView('overview')">📄 Overview</div>
+            <div class="nav-item" onclick="switchView('heatmap')">🔥 Heatmap</div>
+            <div class="nav-item" onclick="switchView('graph')">🕸 Architecture Graph</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-title">Tools</div>
+            <div class="nav-item" onclick="switchView('studio')">✍️ Skill Studio</div>
+            <div class="nav-item" onclick="switchView('exporter')">🚀 API Exporter</div>
+            <div class="nav-item" onclick="switchView('guide')">📚 Guide & Commands</div>
+        </div>
+        
+        <div class="nav-section" id="docs-nav-section" style="display: none;">
+            <div class="nav-title">Scanned Docs</div>
+            <div id="nav-container"></div>
         </div>
     </div>
 
     <div class="content">
         <div class="header">
-            <h1 id="page-title">Dashboard Overview</h1>
+            <div>
+                <h1 id="page-title">Dashboard Overview</h1>
+                <div style="font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; margin-top: 8px;" id="current-time">11:37 AM Time</div>
+            </div>
             <div class="status-badge" id="agent-status">Checking Agents...</div>
         </div>
 
-        <div id="content-container">
-            <div class="panel empty-state">
-                <h3>Loading Knowledge Base...</h3>
-                <p>Fetching architectural DNA from .docs/</p>
+        <!-- View: Overview (Markdown reader) -->
+        <div id="view-overview" class="panel markdown-body">
+            <h3>Welcome to SPARK UI</h3>
+            <p>Select a scanned document from the sidebar to view it.</p>
+        </div>
+
+        <!-- View: Heatmap -->
+        <div id="view-heatmap" class="panel hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+                <div>
+                    <h2>Health Tracking</h2>
+                    <p>AI-driven legacy trap and anti-pattern detection.</p>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-family: var(--font-mono); font-size: 42px; font-weight: 300; color: var(--text-main);" id="health-score">--</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Overall Score</div>
+                </div>
+            </div>
+
+            <div class="widget-row">
+                <div class="widget">
+                    <div class="widget-value" id="stat-total">0</div>
+                    <div class="widget-label">Total Scanned</div>
+                </div>
+                <div class="widget accent-card">
+                    <div class="widget-value" id="stat-clean">0</div>
+                    <div class="widget-label">Clean Code</div>
+                </div>
+                <div class="widget">
+                    <div class="widget-value" style="color: var(--danger);" id="stat-danger">0</div>
+                    <div class="widget-label">Anti-Patterns</div>
+                </div>
+            </div>
+
+            <div class="widget-row">
+                <div class="widget" style="flex: 1;">
+                    <h3 style="margin-bottom: 24px; font-size: 14px; font-weight: 400;">Distribution</h3>
+                    <canvas id="healthChart" style="max-height: 200px;"></canvas>
+                </div>
+                <div class="widget" style="flex: 2; overflow-y: auto; max-height: 290px; justify-content: flex-start;">
+                    <h3 style="margin-bottom: 24px; font-size: 14px; font-weight: 400; display: flex; justify-content: space-between;">
+                        <span>Detailed Report</span>
+                        <span style="border: 1px solid var(--glass-border); padding: 4px 12px; border-radius: 20px; font-size: 11px;">Flagged Files</span>
+                    </h3>
+                    <div id="danger-list">
+                        <p style="color: var(--text-muted); font-size: 13px;">Scanning...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3 style="margin-bottom: 16px; font-size: 14px; font-weight: 400;">Directory Tree</h3>
+                <div id="file-tree" style="background: var(--bg-color); padding: 24px; border-radius: 12px; border: 1px solid var(--glass-border); max-height: 250px; overflow-y: auto;"></div>
             </div>
         </div>
+
+        <!-- View: Graph -->
+        <div id="view-graph" class="panel hidden">
+            <h2>Interactive Architecture Graph</h2>
+            <p>Visualizing relationships between system components.</p>
+            <div id="network-graph"></div>
+        </div>
+
+        <!-- View: Skill Studio -->
+        <div id="view-studio" class="panel hidden" style="display: flex; gap: 40px;">
+            <div style="flex: 1;">
+                <h2>Create Custom Skill</h2>
+                <p>Define a new agent skill. This will be safely saved to <code>.agent/skills/</code> and protected from SPARK updates.</p>
+                <div style="margin-top: 20px;">
+                    <div class="form-group">
+                        <label>Skill Name (e.g., custom-deploy)</label>
+                        <input type="text" id="skill-name" placeholder="lowercase-with-dashes">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="skill-desc" placeholder="What does this skill do?">
+                    </div>
+                    <div class="form-group">
+                        <label>Execution Steps (Markdown)</label>
+                        <textarea id="skill-steps" placeholder="Enter markdown checklist..."></textarea>
+                    </div>
+                    <button class="btn btn-accent" onclick="saveSkill()">Save Skill</button>
+                    <p id="skill-msg" style="margin-top: 16px; color: var(--text-muted); font-size: 13px;"></p>
+                </div>
+            </div>
+            <div style="width: 320px; padding-left: 32px; display: flex; flex-direction: column;">
+                <h3 style="font-size: 14px; font-weight: 400; margin-bottom: 24px;">Installed Skills</h3>
+                <div id="skill-list" style="flex: 1; overflow-y: auto;">
+                    <p style="color: var(--text-muted); font-size: 13px;">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Guide -->
+        <div id="view-guide" class="panel hidden markdown-body">
+            <h2>Loading Documentation...</h2>
+        </div>
+
+        <!-- View: API Exporter -->
+        <div id="view-exporter" class="panel hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                <div>
+                    <h2>API Exporter</h2>
+                    <p>Select endpoints to generate a Postman Collection.</p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn" onclick="exportEnv()">.env</button>
+                    <button class="btn btn-accent" onclick="exportPostman()">Export Collection</button>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 16px 20px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 12px;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px;">
+                    <input type="checkbox" id="selectAllEndpoints" onchange="toggleAllEndpoints(this)">
+                    Select All
+                </label>
+                <span id="endpoint-count" style="font-family: var(--font-mono); font-size: 13px; color: var(--text-muted);">0 items</span>
+            </div>
+            <div id="endpoint-list" style="margin-top: 16px; overflow-y: auto;">
+                <p style="color: var(--text-muted); padding: 20px; text-align: center; font-size: 14px;">No endpoints found.</p>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // Initialize Mermaid
-        mermaid.initialize({ 
-            startOnLoad: false, 
-            theme: 'dark',
-            fontFamily: 'Inter'
-        });
-
         let docsData = [];
+        let treeData = [];
+        let networkInstance = null;
+        let chartInstance = null;
+
+        function switchView(viewName) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            ['overview', 'heatmap', 'graph', 'studio', 'guide', 'exporter'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+            });
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+            const titles = {
+                overview: 'Dashboard Overview',
+                heatmap: 'Codebase Heatmap',
+                graph: 'Architecture Graph',
+                studio: 'Skill Studio',
+                guide: 'Documentation & Guide',
+                exporter: 'API Exporter'
+            };
+            document.getElementById('page-title').innerText = titles[viewName];
+
+            if (viewName === 'graph') renderGraph();
+            if (viewName === 'heatmap') fetchTree();
+            if (viewName === 'guide') fetchReadme();
+            if (viewName === 'studio') fetchSkills();
+            if (viewName === 'exporter') extractEndpoints();
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' Time';
+        }, 1000);
 
         async function fetchDocs() {
             try {
                 const res = await fetch('/api/docs');
                 const data = await res.json();
-                
-                if (data.error) {
-                    renderEmptyState(data.error);
-                    return;
+                if (!data.error) {
+                    docsData = data.docs;
+                    const nav = document.getElementById('nav-container');
+                    document.getElementById('docs-nav-section').style.display = 'block';
+                    nav.innerHTML = '';
+                    docsData.forEach(doc => {
+                        const el = document.createElement('div');
+                        el.className = 'nav-item';
+                        el.innerText = '📄 ' + doc.filename.replace('.md', '').replace(/_/g, ' ');
+                        el.onclick = (e) => {
+                            switchView('overview');
+                            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                            e.currentTarget.classList.add('active');
+                            document.getElementById('page-title').innerText = doc.filename;
+                            document.getElementById('view-overview').innerHTML = marked.parse(doc.content);
+                        };
+                        nav.appendChild(el);
+                    });
                 }
-                
-                docsData = data.docs;
-                renderNav();
-                
-                // Show first doc by default or overview
-                if(docsData.length > 0) {
-                    // Try to find PROJECT_SCAN.md first
-                    const mainDoc = docsData.find(d => d.filename === 'PROJECT_SCAN.md') || docsData[0];
-                    renderDoc(mainDoc.filename);
-                } else {
-                    renderEmptyState("The .docs/ directory is empty. Generate artifacts using the project-scanner skill.");
-                }
-            } catch (err) {
-                renderEmptyState("Failed to connect to the SPARK local server.");
-            }
+            } catch (err) {}
         }
 
         async function fetchStatus() {
@@ -273,91 +451,348 @@
                 const res = await fetch('/api/status');
                 const data = await res.json();
                 const badge = document.getElementById('agent-status');
-                if (data.installed && data.agents) {
+                if (data.installed && data.agents && data.agents.length > 0) {
                     badge.innerHTML = `Agents Active: ${data.agents.join(', ')}`;
+                    badge.classList.add('active');
                 } else {
-                    badge.innerHTML = `No Agents Detected`;
-                    badge.style.color = 'var(--text-muted)';
-                    badge.style.borderColor = 'var(--glass-border)';
+                    badge.innerHTML = `No Agents Active`;
+                    badge.classList.remove('active');
+                }
+            } catch (e) {}
+        }
+
+        async function fetchReadme() {
+            try {
+                const res = await fetch('/api/readme');
+                const data = await res.json();
+                document.getElementById('view-guide').innerHTML = marked.parse(data.content);
+            } catch (e) {}
+        }
+
+        async function fetchTree() {
+            if(treeData.length > 0) return; // already fetched
+            try {
+                const res = await fetch('/api/tree');
+                const data = await res.json();
+                treeData = data.tree;
+                
+                // Naive simulation of finding legacy traps
+                const dangerousFiles = ['controller', 'utils', 'helper', 'api']; 
+                let totalFiles = 0;
+                let dangerFilesCount = 0;
+                let dangerListHTML = '';
+
+                function buildTreeHtml(nodes) {
+                    let html = '';
+                    for(const node of nodes) {
+                        const isDanger = node.type === 'file' && dangerousFiles.some(d => node.name.toLowerCase().includes(d));
+                        
+                        if (node.type === 'file') {
+                            totalFiles++;
+                            if (isDanger) {
+                                dangerFilesCount++;
+                                dangerListHTML += `<div style="padding: 12px 16px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-family: var(--font-mono); font-size: 13px; color: var(--text-main);">${node.path}</span>
+                                    <span style="font-size: 10px; color: var(--text-muted); border: 1px solid var(--glass-border); padding: 4px 8px; border-radius: 20px;">Flagged</span>
+                                </div>`;
+                            }
+                        }
+
+                        const cls = `tree-node ${node.type} ${isDanger ? 'danger' : ''}`;
+                        html += `<div class="${cls}">${node.name}</div>`;
+                        if(node.children) {
+                            html += `<div style="margin-left: 20px;">${buildTreeHtml(node.children)}</div>`;
+                        }
+                    }
+                    return html;
+                }
+                
+                document.getElementById('file-tree').innerHTML = buildTreeHtml(treeData);
+                
+                // Update Widgets
+                const cleanFilesCount = totalFiles - dangerFilesCount;
+                const healthScore = totalFiles === 0 ? 100 : Math.round((cleanFilesCount / totalFiles) * 100);
+                
+                document.getElementById('stat-total').innerText = totalFiles;
+                document.getElementById('stat-clean').innerText = cleanFilesCount;
+                document.getElementById('stat-danger').innerText = dangerFilesCount;
+                document.getElementById('health-score').innerText = healthScore;
+                
+                if (dangerListHTML === '') {
+                    document.getElementById('danger-list').innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No dangerous files found! Your codebase is healthy.</p>';
+                } else {
+                    document.getElementById('danger-list').innerHTML = dangerListHTML;
+                }
+
+                // Render Chart
+                if (chartInstance) chartInstance.destroy();
+                const ctx = document.getElementById('healthChart').getContext('2d');
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Clean Code', 'Anti-Patterns'],
+                        datasets: [{
+                            data: [cleanFilesCount, dangerFilesCount],
+                            backgroundColor: ['#dcedc1', '#2a2a2a'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+
+            } catch (e) {}
+        }
+
+        async function fetchSkills() {
+            try {
+                const res = await fetch('/api/skills');
+                const data = await res.json();
+                const list = document.getElementById('skill-list');
+                list.innerHTML = '';
+                
+                if (data.skills && data.skills.length > 0) {
+                    data.skills.forEach(skill => {
+                        const isCore = skill.type === 'core';
+                        const badge = isCore ? 'Core' : 'Custom';
+                        list.innerHTML += `<div style="padding: 16px 0; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px; color: var(--text-main);">${skill.name}</span>
+                            <span style="font-size: 10px; color: var(--text-muted); border: 1px solid var(--glass-border); padding: 4px 8px; border-radius: 20px;">${badge}</span>
+                        </div>`;
+                    });
+                } else {
+                    list.innerHTML = '<p style="color: var(--text-muted);">No skills found.</p>';
+                }
+            } catch (e) {}
+        }
+
+        async function saveSkill() {
+            const name = document.getElementById('skill-name').value;
+            const desc = document.getElementById('skill-desc').value;
+            const steps = document.getElementById('skill-steps').value;
+
+            if(!name || !steps) {
+                alert("Name and Steps are required!");
+                return;
+            }
+
+            const markdown = `---
+name: ${name}
+description: ${desc}
+---
+
+# ${name}
+
+## Execution Checklist
+${steps}
+`;
+
+            try {
+                const res = await fetch('/api/skills', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, content: markdown })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    document.getElementById('skill-msg').innerText = "✅ Skill saved safely to: " + data.path;
+                    setTimeout(() => document.getElementById('skill-msg').innerText = "", 5000);
                 }
             } catch (e) {
-                console.error(e);
+                alert("Failed to save");
             }
         }
 
-        function renderNav() {
-            const nav = document.getElementById('nav-container');
-            nav.innerHTML = '';
+        function renderGraph() {
+            if(networkInstance) return; // already rendered
             
-            docsData.forEach(doc => {
-                const el = document.createElement('div');
-                el.className = 'nav-item';
-                el.innerText = doc.filename.replace('.md', '').replace(/_/g, ' ');
-                el.onclick = () => renderDoc(doc.filename);
-                nav.appendChild(el);
-            });
+            // Mock graph data, in a real scenario we'd parse .docs/
+            const nodes = new vis.DataSet([
+                { id: 1, label: 'Client App', color: '#00ffaa', shape: 'box' },
+                { id: 2, label: 'API Gateway', color: '#00ffaa', shape: 'box' },
+                { id: 3, label: 'Auth Service', color: '#ff4757', shape: 'box' },
+                { id: 4, label: 'Database', color: '#f1f5f9', shape: 'database' },
+            ]);
+            const edges = new vis.DataSet([
+                { from: 1, to: 2, arrows: 'to' },
+                { from: 2, to: 3, arrows: 'to', label: 'verify token' },
+                { from: 3, to: 4, arrows: 'to' },
+            ]);
+            
+            const container = document.getElementById('network-graph');
+            const data = { nodes, edges };
+            const options = {
+                nodes: { 
+                    font: { color: '#f4f4f4', face: 'Inter', size: 14 }, 
+                    margin: 12,
+                    borderWidth: 1,
+                    color: { background: '#151515', border: '#2a2a2a' },
+                    shapeProperties: { borderRadius: 6 }
+                },
+                edges: { 
+                    color: { color: '#2a2a2a' }, 
+                    font: { color: '#888888', align: 'horizontal', background: '#0d0d0d', strokeWidth: 0, face: 'Courier New', size: 11 },
+                    smooth: { type: 'cubicBezier' }
+                },
+                layout: {
+                    hierarchical: {
+                        direction: 'UD',
+                        sortMethod: 'directed',
+                        nodeSpacing: 150,
+                        levelSeparation: 150
+                    }
+                },
+                physics: { 
+                    hierarchicalRepulsion: { nodeDistance: 150 }
+                }
+            };
+            networkInstance = new vis.Network(container, data, options);
         }
 
-        function renderDoc(filename) {
-            // Update active state
-            document.querySelectorAll('.nav-item').forEach(el => {
-                if (el.innerText === filename.replace('.md', '').replace(/_/g, ' ')) {
-                    el.classList.add('active');
-                } else {
-                    el.classList.remove('active');
+        // --- API Exporter Logic ---
+        let detectedEndpoints = [];
+
+        function extractEndpoints() {
+            detectedEndpoints = [];
+            // Parse through all docs to find patterns like: - **GET** `/api/users`
+            docsData.forEach(doc => {
+                const regex = /(GET|POST|PUT|PATCH|DELETE)[^a-zA-Z0-9/]+([/\w:-]+)/gi;
+                let match;
+                while ((match = regex.exec(doc.content)) !== null) {
+                    const method = match[1].toUpperCase();
+                    const path = match[2];
+                    if (!detectedEndpoints.find(e => e.method === method && e.path === path) && path.includes('/')) {
+                        detectedEndpoints.push({ method, path });
+                    }
                 }
             });
 
-            const doc = docsData.find(d => d.filename === filename);
-            if (!doc) return;
-
-            document.getElementById('page-title').innerText = filename;
-            
-            // Render Markdown
-            const container = document.getElementById('content-container');
-            const parsedHTML = marked.parse(doc.content);
-            
-            container.innerHTML = `
-                <div class="panel markdown-body">
-                    ${parsedHTML}
-                </div>
-            `;
-
-            // Render Mermaid diagrams if any
-            const codeBlocks = container.querySelectorAll('code.language-mermaid');
-            codeBlocks.forEach((block, index) => {
-                const graphDefinition = block.innerText;
-                const parent = block.parentElement; // the <pre> tag
-                
-                // Create a div for mermaid to render into
-                const mermaidDiv = document.createElement('div');
-                mermaidDiv.className = 'mermaid-chart';
-                mermaidDiv.id = `mermaid-${index}`;
-                
-                // Render it
-                mermaid.render(`mermaid-graph-${index}`, graphDefinition).then((result) => {
-                    mermaidDiv.innerHTML = result.svg;
-                    parent.replaceWith(mermaidDiv);
-                }).catch(e => {
-                    console.error("Mermaid error:", e);
+            const list = document.getElementById('endpoint-list');
+            if (detectedEndpoints.length > 0) {
+                document.getElementById('endpoint-count').innerText = `${detectedEndpoints.length} Endpoints`;
+                list.innerHTML = '';
+                detectedEndpoints.forEach((ep, index) => {
+                    list.innerHTML += `<div style="padding: 16px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; gap: 16px;">
+                        <input type="checkbox" class="ep-checkbox" value="${index}" checked>
+                        <span style="font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); width: 60px;">${ep.method}</span>
+                        <span style="font-family: var(--font-mono); font-size: 14px; color: var(--text-main);">${ep.path}</span>
+                    </div>`;
                 });
-            });
+            }
         }
 
-        function renderEmptyState(message) {
-            document.getElementById('content-container').innerHTML = `
-                <div class="panel empty-state">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom: 20px;">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <h3>No Data Available</h3>
-                    <p>${message}</p>
-                </div>
-            `;
+        function toggleAllEndpoints(cb) {
+            document.querySelectorAll('.ep-checkbox').forEach(el => el.checked = cb.checked);
+        }
+
+        function getHeuristicMock(path) {
+            const p = path.toLowerCase();
+            if (p.includes('user')) return { id: "USR-123", name: "John Doe", email: "john@example.com", role: "admin", createdAt: "2026-07-01T10:00:00Z" };
+            if (p.includes('product') || p.includes('item')) return { id: "PRD-456", name: "Premium Widget", price: 99.99, stock: 50 };
+            if (p.includes('order') || p.includes('transaction')) return { id: "ORD-789", total: 99.99, status: "completed" };
+            if (p.includes('auth') || p.includes('login')) return { token: "eyJhbGci...", user: { id: 1, role: "user" } };
+            return { id: "123", status: "success", message: "Operation completed successfully." };
+        }
+
+        function exportPostman() {
+            const selectedIndices = Array.from(document.querySelectorAll('.ep-checkbox:checked')).map(cb => parseInt(cb.value));
+            if (selectedIndices.length === 0) return alert("Select at least one endpoint!");
+
+            const collection = {
+                info: {
+                    name: "SPARK Generated Collection",
+                    description: "Auto-generated API Collection with positive & negative cases using SPARK AI heuristics.",
+                    schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+                },
+                item: []
+            };
+
+            selectedIndices.forEach(idx => {
+                const ep = detectedEndpoints[idx];
+                const mock = getHeuristicMock(ep.path);
+                
+                // Construct URL
+                const urlParts = ep.path.split('/').filter(p => p);
+                const pathArr = urlParts.map(p => p.startsWith(':') ? `{{${p.replace(':','')}}}` : p);
+
+                const item = {
+                    name: `${ep.method} ${ep.path}`,
+                    item: [
+                        {
+                            name: "Positive Case (200 OK)",
+                            request: {
+                                method: ep.method,
+                                header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
+                                body: ep.method !== 'GET' ? { mode: "raw", raw: JSON.stringify(mock, null, 2) } : undefined,
+                                url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
+                            },
+                            response: [{
+                                name: "Success",
+                                status: "OK",
+                                code: 200,
+                                header: [{ key: "Content-Type", value: "application/json" }],
+                                body: JSON.stringify({ success: true, data: mock }, null, 2)
+                            }]
+                        },
+                        {
+                            name: "Negative Case (400 Bad Request)",
+                            request: {
+                                method: ep.method,
+                                header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
+                                body: ep.method !== 'GET' ? { mode: "raw", raw: "{}" } : undefined,
+                                url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
+                            },
+                            response: [{
+                                name: "Bad Request",
+                                status: "Bad Request",
+                                code: 400,
+                                header: [{ key: "Content-Type", value: "application/json" }],
+                                body: JSON.stringify({ success: false, error: { code: "VALIDATION_ERROR", message: "Invalid parameters provided" } }, null, 2)
+                            }]
+                        },
+                        {
+                            name: "Negative Case (401 Unauthorized)",
+                            request: {
+                                method: ep.method,
+                                header: [], // No auth
+                                url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
+                            },
+                            response: [{
+                                name: "Unauthorized",
+                                status: "Unauthorized",
+                                code: 401,
+                                header: [{ key: "Content-Type", value: "application/json" }],
+                                body: JSON.stringify({ success: false, error: { code: "UNAUTHORIZED", message: "Missing or invalid token" } }, null, 2)
+                            }]
+                        }
+                    ]
+                };
+                collection.item.push(item);
+            });
+
+            downloadFile(JSON.stringify(collection, null, 2), 'SPARK_API_Collection.json', 'application/json');
+        }
+
+        function exportEnv() {
+            const envContent = `BASE_URL=http://localhost:3000\nTOKEN=your_jwt_token_here\nNODE_ENV=development\n`;
+            downloadFile(envContent, '.env.example', 'text/plain');
+        }
+
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         // Init
