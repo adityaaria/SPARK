@@ -421,8 +421,15 @@ get_target_dir() {
     esac
   else
     # Project scope: relative to current working directory
-    # Modern AI agents (Codex, Gemini, Antigravity, etc.) use .agents as the universal workspace customization root.
-    echo "$(pwd)/.agents"
+    case "$agent_id" in
+      claude)   echo "$(pwd)/.claude" ;;
+      codex)    echo "$(pwd)/.codex" ;;
+      cursor)   echo "$(pwd)/.cursor" ;;
+      kimi)     echo "$(pwd)/.kimi" ;;
+      opencode) echo "$(pwd)/.opencode" ;;
+      pi)       echo "$(pwd)/.pi" ;;
+      *)        echo "$(pwd)/.$agent_id" ;;
+    esac
   fi
 }
 
@@ -620,6 +627,10 @@ install_for_agent() {
         *)
           # Shell-hook agents: copy manifest to agent-plugin dir
           local plugin_dir="$target_dir/.${agent_id}-plugin"
+          # For project scope, put manifest in the target dir itself
+          if [ "$SCOPE" = "project" ]; then
+            plugin_dir="$(pwd)/.${agent_id}-plugin"
+          fi
           if [ -f "$source_path" ]; then
             mkdir -p "$plugin_dir"
             copy_file "$source_path" "$plugin_dir/$manifest_basename"
