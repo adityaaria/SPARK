@@ -70,6 +70,7 @@ SCOPE="project"
 FORCE=false
 HELP=false
 DRY_RUN=false
+UNINSTALL=false
 
 parse_args() {
   while [ $# -gt 0 ]; do
@@ -77,6 +78,7 @@ parse_args() {
       -g|--global)  SCOPE="global" ;;
       --force)      FORCE=true ;;
       --dry-run)    DRY_RUN=true ;;
+      -u|--uninstall) UNINSTALL=true ;;
       -h|--help)    HELP=true ;;
       *)
         error "Unknown argument: $1"
@@ -101,6 +103,7 @@ print_help() {
                     Default: project scope (./.agent/skills/)
     --force         Re-install even if already installed
     --dry-run       Show what would be done without making changes
+    -u, --uninstall Safely remove SPARK from agent configs
     -h, --help      Show this help message
 
   Examples:
@@ -751,6 +754,85 @@ check_existing_install() {
 }
 
 # =============================================================================
+# Uninstall
+# =============================================================================
+
+uninstall_for_agent() {
+  local agent_id="$1"
+  local target_dir
+  target_dir="$(get_target_dir "$agent_id")"
+
+  if [ ! -d "$target_dir" ]; then
+    return 0
+  fi
+
+  info "Removing SPARK from $agent_id at $target_dir"
+
+  # 1. Remove skills symlink/directory
+  if [ -e "$target_dir/skills" ]; then
+    rm -rf "$target_dir/skills"
+  fi
+
+  # 2. Remove hooks
+  local hook_files
+  hook_files="$(get_agent_hook_files "$agent_id")"
+  if [ -n "$hook_files" ]; then
+    while IFS= read -r hook_file; do
+      [ -z "$hook_file" ] && continue
+      rm -f "$target_dir/$hook_file"
+    done <<< "$hook_files"
+    # Try to remove hooks dir if empty
+    rmdir "$target_dir/hooks" 2>/dev/null || true
+  fi
+
+  # 3. Remove plugin manifests
+  local manifest_files
+  manifest_files="$(get_agent_manifest_files "$agent_id")"
+  if [ -n "$manifest_files" ]; then
+    while IFS= read -r manifest_file; do
+      [ -z "$manifest_file" ] && continue
+      rm -f "$target_dir/$manifest_file"
+      local manifest_dir
+      manifest_dir="$(dirname "$target_dir/$manifest_file")"
+      rmdir "$manifest_dir" 2>/dev/null || true
+    done <<< "$manifest_files"
+  fi
+
+  # 4. Remove agent dir if totally empty
+  rmdir "$target_dir" 2>/dev/null || true
+}
+
+perform_uninstall() {
+  header "SPARK Uninstaller"
+
+  local lock_dir
+  if [ "$SCOPE" = "global" ]; then
+    lock_dir="${HOME:-$(eval echo ~)}"
+  else
+    lock_dir="$(pwd)"
+  fi
+  local lock_path="$lock_dir/$LOCK_FILE_NAME"
+
+  # Detect agents
+  info "Detecting installed agents to clean up..."
+  detect_agents || true
+  build_selected_agents
+
+  for agent_id in "${SELECTED_AGENTS[@]}"; do
+    uninstall_for_agent "$agent_id"
+  done
+
+  if [ -f "$lock_path" ]; then
+    rm -f "$lock_path"
+    info "Removed lock file: $lock_path"
+  fi
+
+  echo ""
+  success "SPARK has been safely uninstalled."
+  exit $EXIT_SUCCESS
+}
+
+# =============================================================================
 # Summary
 # =============================================================================
 
@@ -798,6 +880,10 @@ main() {
   if $HELP; then
     print_help
     exit $EXIT_SUCCESS
+  fi
+
+  if $UNINSTALL; then
+    perform_uninstall
   fi
 
   header "SPARK Native Installer"
