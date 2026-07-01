@@ -652,6 +652,18 @@ ${steps}
                         let l = line.trim();
                         if (!l || l.startsWith('graph') || l.startsWith('flowchart') || l.startsWith('subgraph') || l.startsWith('end')) return;
 
+                        // Normalize Mermaid links (dotted, thick, solid without arrow, and inline labels)
+                        l = l.replace(/-\.->/g, '-->')
+                             .replace(/==>/g, '-->')
+                             .replace(/---/g, '-->')
+                             .replace(/-\.-/g, '-->')
+                             .replace(/===/g, '-->');
+                             
+                        // Normalize inline labels like A -- label --> B to A -->|label| B
+                        l = l.replace(/--\s*([^>]+?)\s*-->/g, '-->|$1|')
+                             .replace(/-\.\s*([^>]+?)\s*\.->/g, '-->|$1|')
+                             .replace(/==\s*([^>]+?)\s*==>/g, '-->|$1|');
+
                         const parts = l.split('-->');
                         if (parts.length >= 2) {
                             let fromPart = parts[0].trim();
