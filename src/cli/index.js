@@ -14,6 +14,12 @@ export async function run(argv = [], env = process.env) {
     return;
   }
 
+  if (command === 'dashboard' || command === 'ui') {
+    const { startDashboard } = await import('../dashboard/server.js');
+    startDashboard();
+    return;
+  }
+
   throw new Error(`Unknown command: ${command}`);
 }
 
