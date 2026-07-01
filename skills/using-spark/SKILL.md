@@ -49,6 +49,10 @@ Skills speak in actions ("dispatch a subagent", "create a todo", "read a file") 
 
 **Invoke relevant or requested skills BEFORE any response or action.** Even a 1% chance a skill might apply means that you should invoke the skill to check. If an invoked skill turns out to be wrong for the situation, you don't need to use it.
 
+## Announcement Format
+When you invoke a skill, you MUST announce it to the developer using exactly this format as the very first thing you say:
+`spark detection 💥 Using [skill] to [purpose]`
+
 ```dot
 digraph skill_flow {
     "User message received" [shape=doublecircle];
@@ -57,7 +61,7 @@ digraph skill_flow {
     "Invoke brainstorming skill" [shape=box];
     "Might any skill apply?" [shape=diamond];
     "Invoke the skill" [shape=box];
-    "Announce: 'Using [skill] to [purpose]'" [shape=box];
+    "Announce: 'spark detection 💥 Using [skill]...'" [shape=box];
     "Has checklist?" [shape=diamond];
     "Create a todo per item" [shape=box];
     "Follow skill exactly" [shape=box];
@@ -71,8 +75,8 @@ digraph skill_flow {
     "User message received" -> "Might any skill apply?";
     "Might any skill apply?" -> "Invoke the skill" [label="yes, even 1%"];
     "Might any skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
-    "Invoke the skill" -> "Announce: 'Using [skill] to [purpose]'";
-    "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
+    "Invoke the skill" -> "Announce: 'spark detection 💥 Using [skill]...'";
+    "Announce: 'spark detection 💥 Using [skill]...'" -> "Has checklist?";
     "Has checklist?" -> "Create a todo per item" [label="yes"];
     "Has checklist?" -> "Follow skill exactly" [label="no"];
     "Create a todo per item" -> "Follow skill exactly";

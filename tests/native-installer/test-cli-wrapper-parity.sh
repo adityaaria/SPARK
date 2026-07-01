@@ -45,8 +45,8 @@ out_node="$(cd "$test_dir" && HOME="$test_home" node "$NODE_CLI" install --dry-r
 out_bash="$(cd "$test_dir" && HOME="$test_home" bash "$BASH_CLI" --dry-run 2>&1 || true)"
 
 # 1a. Check detected agents match
-agents_node="$(echo "$out_node" | grep "●" | sort)"
-agents_bash="$(echo "$out_bash" | grep "●" | sort)"
+agents_node="$(echo "$out_node" | grep "■" | sort)"
+agents_bash="$(echo "$out_bash" | grep "■" | sort)"
 
 if [ -n "$agents_node" ] && [ "$agents_node" = "$agents_bash" ]; then
     pass "Detected agents list is identical between node CLI and bash installer"

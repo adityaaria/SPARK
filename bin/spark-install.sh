@@ -23,10 +23,11 @@ readonly LOCK_FILE_NAME=".spark-lock.json"
 if [ -t 1 ]; then
   readonly C_RESET='\033[0m'
   readonly C_BOLD='\033[1m'
-  readonly C_GREEN='\033[0;32m'
-  readonly C_YELLOW='\033[0;33m'
-  readonly C_RED='\033[0;31m'
-  readonly C_CYAN='\033[0;36m'
+  readonly C_GREEN='\033[38;5;46m'       # 8-bit neon green
+  readonly C_YELLOW='\033[38;5;226m'      # 8-bit bright yellow
+  readonly C_RED='\033[38;5;196m'         # 8-bit bright red
+  readonly C_CYAN='\033[38;5;51m'         # 8-bit cyan
+  readonly C_MAGENTA='\033[38;5;201m'     # 8-bit magenta
   readonly C_DIM='\033[2m'
 else
   readonly C_RESET=''
@@ -35,6 +36,7 @@ else
   readonly C_YELLOW=''
   readonly C_RED=''
   readonly C_CYAN=''
+  readonly C_MAGENTA=''
   readonly C_DIM=''
 fi
 
@@ -46,15 +48,19 @@ readonly EXIT_NO_REPO=3
 readonly EXIT_INSTALL_FAILED=4
 
 # =============================================================================
-# Output helpers
+# Output helpers (8-Bit Theme)
 # =============================================================================
 
-info()    { printf "${C_CYAN}▸${C_RESET} %s\n" "$*"; }
-success() { printf "${C_GREEN}✔${C_RESET} %s\n" "$*"; }
-warn()    { printf "${C_YELLOW}⚠${C_RESET} %s\n" "$*" >&2; }
-error()   { printf "${C_RED}✖${C_RESET} %s\n" "$*" >&2; }
-step()    { printf "${C_BOLD}[%s/%s]${C_RESET} %s\n" "$1" "$2" "$3"; }
-header()  { printf "\n${C_BOLD}═══ %s ═══${C_RESET}\n\n" "$*"; }
+info()    { printf "${C_CYAN}►${C_RESET} %s\n" "$*"; }
+success() { printf "${C_GREEN}★${C_RESET} %s\n" "$*"; }
+warn()    { printf "${C_YELLOW}▲${C_RESET} %s\n" "$*" >&2; }
+error()   { printf "${C_RED}[X]${C_RESET} %s\n" "$*" >&2; }
+step()    { printf "${C_MAGENTA}[LVL %s/%s]${C_RESET} %s\n" "$1" "$2" "$3"; }
+header()  {
+  printf "\n${C_MAGENTA}▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄${C_RESET}\n"
+  printf "${C_MAGENTA}█${C_RESET} ${C_BOLD}%-35s${C_RESET} ${C_MAGENTA}█${C_RESET}\n" " $1 "
+  printf "${C_MAGENTA}▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀${C_RESET}\n\n"
+}
 
 # =============================================================================
 # Argument parsing
@@ -310,7 +316,7 @@ detect_agents() {
     info "Detected $detected_count agent(s):"
     for i in "${!AGENT_IDS[@]}"; do
       if [ "${AGENT_DETECTED[$i]}" = "true" ]; then
-        printf "  ${C_GREEN}●${C_RESET} %-15s ${C_DIM}(%s)${C_RESET}\n" "${AGENT_LABELS[$i]}" "${AGENT_REASONS[$i]}"
+        printf "  ${C_GREEN}■${C_RESET} %-15s ${C_DIM}(%s)${C_RESET}\n" "${AGENT_LABELS[$i]}" "${AGENT_REASONS[$i]}"
       fi
     done
   fi
@@ -765,7 +771,7 @@ print_summary() {
       method="$(echo "$entry" | cut -d: -f2)"
       local target_dir
       target_dir="$(get_target_dir "$agent_id")"
-      printf "    ${C_GREEN}●${C_RESET} %-15s → %s ${C_DIM}(%s)${C_RESET}\n" "$agent_id" "$target_dir" "$method"
+      printf "    ${C_GREEN}■${C_RESET} %-15s → %s ${C_DIM}(%s)${C_RESET}\n" "$agent_id" "$target_dir" "$method"
     done
   fi
 
@@ -773,7 +779,7 @@ print_summary() {
     echo ""
     echo "  Errors:"
     for entry in "${INSTALL_ERRORS[@]}"; do
-      printf "    ${C_RED}●${C_RESET} %s\n" "$entry"
+      printf "    ${C_RED}■${C_RESET} %s\n" "$entry"
     done
   fi
 
