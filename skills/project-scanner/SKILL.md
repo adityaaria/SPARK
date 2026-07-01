@@ -11,7 +11,12 @@ Use this skill to scan and document a codebase's architecture, operational rules
 
 **Announce at start:** "spark detection 💥 Using project-scanner to analyze repository DNA"
 
-**Save findings to:** The `.docs/` directory. **You must physically create this directory and save the files to disk using your tools. Do NOT just print the output to the user.** For large projects, break down the documentation logically (e.g., `.docs/PROJECT_SCAN.md`, `.docs/API_CONTRACT.md`, `.docs/DOMAINS/`) instead of creating one massive monolithic file.
+**Save findings to:** The `.docs/` directory. **You must physically create this directory and save the files to disk using your tools. Do NOT just print the output to the user.** 
+
+## Multi-Project Workspaces (CRITICAL)
+If the workspace contains multiple independent projects or repositories (e.g., a `frontend` folder and a `backend` folder), you MUST generate a separate `.docs/` directory inside EACH project's root folder (e.g., `frontend/.docs/`, `backend/.docs/`). Do NOT combine them into a single global `.docs/` or dump everything into just one project's folder. Treat each independent project as its own ecosystem that requires its own documentation.
+
+For large projects, break down the documentation logically (e.g., `.docs/PROJECT_SCAN.md`, `.docs/API_CONTRACT.md`, `.docs/DOMAINS/`) instead of creating one massive monolithic file.
 
 ## Handling Massive Codebases (Subagent Delegation)
 If the repository is extremely large and analyzing all four pillars sequentially risks exceeding context limits or taking too long:
@@ -53,7 +58,8 @@ Identify conventions, rules, and technical debt enforced or found in the codebas
 ## Execution Checklist
 
 - `[ ]` **Step 1:** Announce skill usage exactly as required.
-- `[ ]` **Step 2:** Scan root configuration files and prioritize searching for Swagger/OpenAPI specifications.
-- `[ ]` **Step 3:** Scan source directory structures to infer the language, framework, and architectural patterns.
-- `[ ]` **Step 4:** Analyze testing frameworks, CI/CD workflows, and actively hunt for anti-patterns and legacy traps.
-- `[ ]` **Step 5 (CRITICAL):** You MUST use your file-writing tools to physically create the `.docs/` directory and save the markdown files (e.g. `PROJECT_SCAN.md`, `API_CONTRACT.md`) into it. DO NOT just print the summary into the chat! You must physically write the files to disk.
+- `[ ]` **Step 2:** Identify if the workspace contains multiple independent projects (e.g., frontend vs backend). If so, plan to scan and generate `.docs/` for EACH project separately.
+- `[ ]` **Step 3:** Scan root configuration files and prioritize searching for Swagger/OpenAPI specifications.
+- `[ ]` **Step 4:** Scan source directory structures to infer the language, framework, and architectural patterns.
+- `[ ]` **Step 5:** Analyze testing frameworks, CI/CD workflows, and actively hunt for anti-patterns and legacy traps.
+- `[ ]` **Step 6 (CRITICAL):** You MUST use your file-writing tools to physically create the `.docs/` directory (inside each project root if multi-repo) and save the markdown files (e.g. `PROJECT_SCAN.md`, `API_CONTRACT.md`) into it. DO NOT just print the summary into the chat! You must physically write the files to disk.

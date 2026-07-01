@@ -621,19 +621,81 @@ ${steps}
                 return;
             }
 
-            // Create some dummy nodes for architecture visualization (in a real scenario we'd parse .docs/)
-            const nodes = new vis.DataSet([
-                { id: 1, label: 'Client App', color: '#00ffaa', shape: 'box' },
-                { id: 2, label: 'API Gateway', color: '#00ffaa', shape: 'box' },
-                { id: 3, label: 'Auth Service', color: '#ff4757', shape: 'box' },
-                { id: 4, label: 'Database', color: '#f1f5f9', shape: 'database' },
-            ]);
-            const edges = new vis.DataSet([
-                { from: 1, to: 2, arrows: 'to' },
-                { from: 2, to: 3, arrows: 'to', label: 'verify token' },
-                { from: 3, to: 4, arrows: 'to' },
-            ]);
-            
+            // Dynamic Mermaid Parser
+            let nodesMap = new Map();
+            let edgesList = [];
+            let nodeIdCounter = 1;
+
+            function parseNode(str) {
+                const match = str.trim().match(/^([a-zA-Z0-9_-]+)(.*)$/);
+                if (!match) return null;
+                const rawId = match[1];
+                let label = rawId;
+                let shape = 'box';
+                const rest = match[2].trim();
+                if (rest) {
+                    const labelMatch = rest.match(/[\[\(\{]+(.*?)[\]\}\)]+/);
+                    if (labelMatch) label = labelMatch[1].replace(/["']/g, '');
+                    if (rest.includes('[((') || rest.includes('[([')) shape = 'database';
+                    else if (rest.includes('{')) shape = 'diamond';
+                    else if (rest.includes('((')) shape = 'ellipse';
+                }
+                return { rawId, label, shape };
+            }
+
+            docsData.forEach(doc => {
+                const mermaidRegex = /```mermaid\s+([\s\S]*?)```/g;
+                let match;
+                while ((match = mermaidRegex.exec(doc.content)) !== null) {
+                    const lines = match[1].split('\n');
+                    lines.forEach(line => {
+                        let l = line.trim();
+                        if (!l || l.startsWith('graph') || l.startsWith('flowchart') || l.startsWith('subgraph') || l.startsWith('end')) return;
+
+                        const parts = l.split('-->');
+                        if (parts.length >= 2) {
+                            let fromPart = parts[0].trim();
+                            let toPart = parts.slice(1).join('-->').trim();
+                            
+                            let edgeLabel = '';
+                            if (toPart.startsWith('|')) {
+                                const pipeEnd = toPart.indexOf('|', 1);
+                                if (pipeEnd > -1) {
+                                    edgeLabel = toPart.substring(1, pipeEnd).trim();
+                                    toPart = toPart.substring(pipeEnd + 1).trim();
+                                }
+                            }
+
+                            const fNode = parseNode(fromPart);
+                            const tNode = parseNode(toPart);
+
+                            if (fNode && tNode) {
+                                if (!nodesMap.has(fNode.rawId)) {
+                                    nodesMap.set(fNode.rawId, { id: nodeIdCounter++, label: fNode.label, shape: fNode.shape, color: { background: '#151515', border: '#2a2a2a' } });
+                                }
+                                if (!nodesMap.has(tNode.rawId)) {
+                                    nodesMap.set(tNode.rawId, { id: nodeIdCounter++, label: tNode.label, shape: tNode.shape, color: { background: '#151515', border: '#2a2a2a' } });
+                                }
+
+                                edgesList.push({
+                                    from: nodesMap.get(fNode.rawId).id,
+                                    to: nodesMap.get(tNode.rawId).id,
+                                    arrows: 'to',
+                                    label: edgeLabel
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (nodesMap.size === 0) {
+                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);">No Mermaid architecture graphs found in .docs/ files. Run the project-scanner skill first.</div>';
+                return;
+            }
+
+            const nodes = new vis.DataSet(Array.from(nodesMap.values()));
+            const edges = new vis.DataSet(edgesList);
             const data = { nodes, edges };
             const options = {
                 nodes: { 
@@ -742,8 +804,15 @@ ${steps}
                             },
                             response: [{
                                 name: "Success",
+                                originalRequest: {
+                                    method: ep.method,
+                                    header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
+                                    body: ep.method !== 'GET' ? { mode: "raw", raw: JSON.stringify(mock, null, 2) } : undefined,
+                                    url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
+                                },
                                 status: "OK",
                                 code: 200,
+                                _postman_previewlanguage: "json",
                                 header: [{ key: "Content-Type", value: "application/json" }],
                                 body: JSON.stringify({ success: true, data: mock }, null, 2)
                             }]
@@ -758,8 +827,15 @@ ${steps}
                             },
                             response: [{
                                 name: "Bad Request",
+                                originalRequest: {
+                                    method: ep.method,
+                                    header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
+                                    body: ep.method !== 'GET' ? { mode: "raw", raw: "{}" } : undefined,
+                                    url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
+                                },
                                 status: "Bad Request",
                                 code: 400,
+                                _postman_previewlanguage: "json",
                                 header: [{ key: "Content-Type", value: "application/json" }],
                                 body: JSON.stringify({ success: false, error: { code: "VALIDATION_ERROR", message: "Invalid parameters provided" } }, null, 2)
                             }]
@@ -773,8 +849,14 @@ ${steps}
                             },
                             response: [{
                                 name: "Unauthorized",
+                                originalRequest: {
+                                    method: ep.method,
+                                    header: [], // No auth
+                                    url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
+                                },
                                 status: "Unauthorized",
                                 code: 401,
+                                _postman_previewlanguage: "json",
                                 header: [{ key: "Content-Type", value: "application/json" }],
                                 body: JSON.stringify({ success: false, error: { code: "UNAUTHORIZED", message: "Missing or invalid token" } }, null, 2)
                             }]
