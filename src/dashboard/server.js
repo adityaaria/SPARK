@@ -45,28 +45,60 @@ const server = http.createServer((req, res) => {
   // API Route: Get File Tree (for Heatmap)
   if (req.url === '/api/tree' && req.method === 'GET') {
     res.setHeader('Content-Type', 'application/json');
-    const ignoreDirs = ['node_modules', '.git', '.docs', '.claude', '.cursor', '.codex', 'dist', 'build'];
     
-    function scanDir(dir, base = '') {
-      let results = [];
-      try {
-        const items = fs.readdirSync(dir);
-        for (const item of items) {
-          if (ignoreDirs.includes(item) || item.startsWith('.')) continue;
-          const fullPath = path.join(dir, item);
-          const relPath = path.join(base, item);
-          const stat = fs.statSync(fullPath);
-          if (stat.isDirectory()) {
-            results.push({ name: item, type: 'dir', path: relPath, children: scanDir(fullPath, relPath) });
-          } else {
-            results.push({ name: item, type: 'file', path: relPath });
-          }
+    const getDirectoryTree = (dirPath, relativePath = '') => {
+      const items = fs.readdirSync(dirPath);
+      let result = [];
+      
+      for (const item of items) {
+        if (['node_modules', '.git', '.docs', '.agents', '.spark'].includes(item)) continue;
+        
+        const fullPath = path.join(dirPath, item);
+        const itemRelativePath = path.join(relativePath, item);
+        const stat = fs.statSync(fullPath);
+        
+        let isDanger = false;
+        let dangerReason = '';
+        
+        const lowerItem = item.toLowerCase();
+        if (lowerItem.includes('controller')) {
+            isDanger = true;
+            dangerReason = 'Anti-Pattern: "God Object" tendency. Move business logic to specific Domain Services instead of Controllers.';
+        } else if (lowerItem.includes('utils')) {
+            isDanger = true;
+            dangerReason = 'Legacy Trap: "Utils" folders become untracked dumping grounds for dead code. Use specific domain modules.';
+        } else if (lowerItem.includes('helper')) {
+            isDanger = true;
+            dangerReason = 'Legacy Trap: "Helpers" lack clear boundaries and violate single responsibility principles.';
+        } else if (lowerItem.includes('api') && stat.isDirectory()) {
+            isDanger = true;
+            dangerReason = 'Anti-Pattern: Generic "API" folders often lead to poor separation of concerns. Group by feature/domain instead.';
         }
-      } catch (e) {}
-      return results;
-    }
+
+        if (stat.isDirectory()) {
+          const children = getDirectoryTree(fullPath, itemRelativePath);
+          result.push({
+            name: item,
+            path: itemRelativePath,
+            type: 'dir',
+            isDanger,
+            dangerReason,
+            children
+          });
+        } else {
+          result.push({
+            name: item,
+            path: itemRelativePath,
+            type: 'file',
+            isDanger,
+            dangerReason
+          });
+        }
+      }
+      return result;
+    };
     
-    return res.end(JSON.stringify({ tree: scanDir(process.cwd()) }));
+    return res.end(JSON.stringify({ tree: getDirectoryTree(process.cwd()) }));
   }
 
   // API Route: Get SPARK Readme (for Guide)
@@ -97,7 +129,7 @@ const server = http.createServer((req, res) => {
     }
     
     // 2. Custom skills
-    const customDir = path.join(process.cwd(), '.agent', 'skills');
+    const customDir = path.join(process.cwd(), '.agents', 'skills');
     if (fs.existsSync(customDir)) {
       try {
         const items = fs.readdirSync(customDir);
@@ -119,8 +151,8 @@ const server = http.createServer((req, res) => {
       }
       
       // Save to a safe, user-level directory that SPARK updates won't touch
-      // The Anthropic standard allows putting skills in .agent/skills/
-      const customSkillsDir = path.join(process.cwd(), '.agent', 'skills', data.name);
+      // The Anthropic/Gemini standard allows putting skills in .agents/skills/
+      const customSkillsDir = path.join(process.cwd(), '.agents', 'skills', data.name);
       
       try {
         fs.mkdirSync(customSkillsDir, { recursive: true });

@@ -24,7 +24,7 @@ export function printHelp() {
   printLine('');
   printMuted('Wraps the native SPARK installer (bin/spark-install.sh).');
   printLine('');
-  printLine(labelValue('Options', '-g, --global    Install to global agent config (~/.agent/skills/)'));
+  printLine(labelValue('Options', '-g, --global    Install to global agent config (~/.agents/skills/)'));
   printLine(labelValue('       ', '--force         Re-install even if already installed'));
   printLine(labelValue('       ', '--dry-run       Show what would be done without making changes'));
   printLine(labelValue('       ', '-h, --help      Show this help message'));

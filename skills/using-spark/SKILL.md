@@ -10,7 +10,12 @@ If you were dispatched as a subagent to execute a specific task, skip this skill
 <EXTREMELY-IMPORTANT>
 If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
 
-IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+IF A SKILL APPLIES TO YOUR TASK, OR IF THE USER EXPLICITLY REQUESTS A SKILL, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT IMMEDIATELY.
+
+**Do NOT ask clarifying questions first.**
+**Do NOT start a conversation.**
+**Do NOT explain what you are going to do.**
+**JUST EXECUTE THE SKILL DIRECTLY AS YOUR FIRST TOOL CALL.**
 
 This is not negotiable. This is not optional. You cannot rationalize your way out of this.
 </EXTREMELY-IMPORTANT>
@@ -48,6 +53,8 @@ Skills speak in actions ("dispatch a subagent", "create a todo", "read a file") 
 ## The Rule
 
 **Invoke relevant or requested skills BEFORE any response or action.** Even a 1% chance a skill might apply means that you should invoke the skill to check. If an invoked skill turns out to be wrong for the situation, you don't need to use it.
+
+**CRITICAL:** If the user mentions a specific skill by name (e.g., "scan project", "project-scanner", "run deployment"), you MUST invoke that skill IMMEDIATELY as your very first tool call. Do not answer conversationally. Do not ask for confirmation. Execute the skill first.
 
 ## Announcement Format
 When you invoke a skill, you MUST announce it to the developer using exactly this format as the very first thing you say:

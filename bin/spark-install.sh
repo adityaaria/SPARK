@@ -99,8 +99,8 @@ print_help() {
     bash bin/spark-install.sh [options]
 
   Options:
-    -g, --global    Install to global agent config (~/.agent/skills/)
-                    Default: project scope (./.agent/skills/)
+    -g, --global    Install to global agent config (~/.agents/skills/)
+                    Default: project scope (./.agents/skills/)
     --force         Re-install even if already installed
     --dry-run       Show what would be done without making changes
     -u, --uninstall Safely remove SPARK from agent configs
