@@ -479,7 +479,7 @@ rm -f "$upd_dir/.spark-lock.json.bak" 2>/dev/null || true
 upd_out="$(cd "$upd_dir" && HOME="$upd_home" bash "$SCRIPT_DIR/../../bin/spark-update.sh" --yes 2>&1 || true)"
 
 # Verify lockfile is updated to current version and skills exist
-if grep -q '"version": "6.0.30"' "$upd_dir/.spark-lock.json" 2>/dev/null && [ -e "$upd_dir/.claude/skills/using-spark" ]; then
+if grep -q '"version": "6.1.0"' "$upd_dir/.spark-lock.json" 2>/dev/null && [ -e "$upd_dir/.claude/skills/using-spark" ]; then
     pass "Updater successfully upgraded from old version and updated .spark-lock.json atomically"
 else
     fail "Updater failed to upgrade or update lockfile properly"

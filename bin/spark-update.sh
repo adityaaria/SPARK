@@ -16,7 +16,7 @@ set -euo pipefail
 # Constants & Colors
 # =============================================================================
 
-VERSION="6.0.30"
+VERSION="6.1.0"
 readonly LOCK_FILE_NAME=".spark-lock.json"
 
 # Colors (disabled if not a TTY)

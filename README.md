@@ -25,18 +25,20 @@ Installation differs by harness. If you use more than one, install SPARK separat
 
 ### Native Installer (Recommended)
 
-The native installer auto-detects which coding agents you have installed and sets up SPARK for all of them — skills AND hooks — with zero external dependencies.
+The native installer auto-detects which coding agents you have installed and provides an interactive checklist menu to set up SPARK for them — skills AND hooks — with zero external dependencies.
 
-**From a fresh clone:**
-
-```bash
-git clone https://github.com/adityaaria/SPARK.git && cd SPARK && bash bin/spark-install.sh
-```
-
-**If you already have the repo cloned:**
+**Interactive Install:**
 
 ```bash
 bash bin/spark-install.sh
+```
+*By default, this opens an interactive 0–9 checkbox menu where detected agents are pre-selected. Press `Enter` to confirm.*
+
+**Non-Interactive / CI Auto-Install:**
+
+```bash
+bash bin/spark-install.sh -y           # Auto-install to all detected agents
+bash bin/spark-install.sh --agent=claude-code,cursor  # Target specific agents
 ```
 
 **Global install** (applies to all projects):
@@ -45,16 +47,42 @@ bash bin/spark-install.sh
 bash bin/spark-install.sh -g
 ```
 
-The installer creates symlinks from the repo's `skills/` directory to each agent's config, so future `git pull` updates are picked up automatically. Run `bash bin/spark-install.sh --help` for all options.
+**Atomic Update:**
+
+To compare your installed versions against the registry and perform an atomic reinstall across your agents:
+
+```bash
+bash bin/spark-update.sh
+bash bin/spark-update.sh -g            # Update global install
+```
+
+**Clean Uninstall:**
+
+To safely remove SPARK skills and hooks without deleting or damaging your host agent configuration directories:
+
+```bash
+bash bin/spark-uninstall.sh
+bash bin/spark-uninstall.sh -g         # Uninstall global install
+bash bin/spark-uninstall.sh --agent=claude-code  # Partial uninstall for specific agent
+```
 
 ### NPM Meta-Installer
 
-Alternative if you prefer using npm (requires Node.js). This command acts as a thin wrapper around the native installer (`bin/spark-install.sh`), executing the exact same bash script and supporting the same options:
+Alternative if you prefer using npm (requires Node.js). These commands act as thin wrappers around the native scripts (`bin/spark-*.sh`), executing the exact same bash automation and supporting the same options:
 
 ```bash
+# Install (interactive menu by default, or use -y to auto-install)
 npx @adityaaria/spark install
 npx @adityaaria/spark install -g       # Install to global agent config
 npx @adityaaria/spark install --force  # Re-install over existing installations
+
+# Update
+npx @adityaaria/spark update
+npx @adityaaria/spark update -g        # Update global install
+
+# Uninstall
+npx @adityaaria/spark uninstall
+npx @adityaaria/spark uninstall -g     # Uninstall global install
 ```
 
 ### Claude Code
