@@ -267,6 +267,29 @@ else
     fail "Installer did not continue after slow npm registry check"
 fi
 
+# Interactive selection should accept a single numeric input and proceed immediately
+interactive_dir="$TEST_ROOT/interactive-test"
+interactive_home="$TEST_ROOT/interactive-home"
+mkdir -p "$interactive_dir" "$interactive_home/.claude" "$interactive_home/.codex"
+
+interactive_output="$(cd "$interactive_dir" && HOME="$interactive_home" SPARK_FORCE_INTERACTIVE=true bash "$INSTALLER" --dry-run <<'EOF' 2>&1 || true
+1
+EOF
+)"
+
+prompt_count="$(printf "%s" "$interactive_output" | grep -c "Enter agent number")"
+if [ "$prompt_count" -eq 1 ]; then
+    pass "Interactive installer accepts one numeric selection without re-prompt loop"
+else
+    fail "Interactive installer re-prompted unexpectedly ($prompt_count prompts)"
+fi
+
+if printf "%s" "$interactive_output" | grep -q "\[DRY-RUN\] Would install for codex-cli" && ! printf "%s" "$interactive_output" | grep -q "\[DRY-RUN\] Would install for claude-code"; then
+    pass "Interactive installer applies only the selected numeric agent"
+else
+    fail "Interactive installer did not restrict installation to the selected numeric agent"
+fi
+
 # =============================================================================
 # Test 5: Idempotency — install twice in temp dir, assert same result
 # =============================================================================

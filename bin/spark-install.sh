@@ -433,51 +433,26 @@ detect_agents() {
 SELECTED_AGENTS=()
 
 show_interactive_menu() {
-  local selected=()
-  for i in "${!AGENT_IDS[@]}"; do
-    selected[$i]="${AGENT_DETECTED[$i]}"
-  done
-
-  clear_selection() {
-    for i in "${!AGENT_IDS[@]}"; do
-      selected[$i]="false"
-    done
-  }
-
   select_from_input() {
     local input="$1"
-    local new_selected=()
-    for i in "${!AGENT_IDS[@]}"; do
-      new_selected[$i]="false"
-    done
 
     local normalized="$input"
     normalized="${normalized//,/ }"
 
-    local has_valid_choice=false
+    local chosen_agents=()
     for token in $normalized; do
-      local len=${#token}
-      local idx=0
-      while [ $idx -lt $len ]; do
-        local char="${token:$idx:1}"
-        if [[ "$char" =~ ^[0-9]$ ]] && [ "$char" -ge 0 ] && [ "$char" -lt "${#AGENT_IDS[@]}" ]; then
-          new_selected[$char]="true"
-          has_valid_choice=true
-        else
-          warn "Ignoring invalid choice: $char"
-        fi
-        idx=$((idx + 1))
-      done
+      if [[ "$token" =~ ^[0-9]+$ ]] && [ "$token" -ge 0 ] && [ "$token" -lt "${#AGENT_IDS[@]}" ]; then
+        chosen_agents+=("${AGENT_IDS[$token]}")
+      else
+        warn "Ignoring invalid choice: $token"
+      fi
     done
 
-    if ! $has_valid_choice; then
+    if [ ${#chosen_agents[@]} -eq 0 ]; then
       return 1
     fi
 
-    for i in "${!AGENT_IDS[@]}"; do
-      selected[$i]="${new_selected[$i]}"
-    done
-
+    SELECTED_AGENTS=("${chosen_agents[@]}")
     return 0
   }
 
@@ -486,49 +461,44 @@ show_interactive_menu() {
     echo "Select which agents to install SPARK for:"
     echo ""
     for i in "${!AGENT_IDS[@]}"; do
-      local checkbox="[ ]"
-      if [ "${selected[$i]}" = "true" ]; then
-        checkbox="[${C_GREEN}x${C_RESET}]"
-      fi
       local label="${AGENT_LABELS[$i]}"
       if [ "${AGENT_DETECTED[$i]}" = "true" ]; then
-        label="$label ${C_GREEN}(detected)${C_RESET}"
+        printf "  ${C_BOLD}%d)${C_RESET} %s ${C_GREEN}(detected)${C_RESET}\n" "$i" "$label"
+      else
+        printf "  ${C_BOLD}%d)${C_RESET} %s\n" "$i" "$label"
       fi
-      printf "  %s ${C_BOLD}%d)${C_RESET} %s\n" "$checkbox" "$i" "$label"
     done
     echo ""
-    printf "Enter agent numbers separated by spaces or commas, 'a' for all detected, 'n' to clear, or Enter to confirm: "
-    read -r input || break
+    printf "Enter agent number(s) separated by spaces or commas. Press Enter to use detected agents: "
+    read -r input || {
+      error "Interactive selection aborted before any agent was chosen."
+      exit $EXIT_NO_AGENTS
+    }
 
     if [ -z "$input" ]; then
-      # Enter pressed: confirm selection
+      SELECTED_AGENTS=()
       for i in "${!AGENT_IDS[@]}"; do
-        if [ "${selected[$i]}" = "true" ]; then
+        if [ "${AGENT_DETECTED[$i]}" = "true" ]; then
           SELECTED_AGENTS+=("${AGENT_IDS[$i]}")
         fi
       done
       if [ ${#SELECTED_AGENTS[@]} -eq 0 ]; then
-        warn "No agents selected. Please select at least one agent or enter 'q' to quit."
+        warn "No detected agents available. Enter at least one agent number."
         continue
       fi
       break
-    elif [ "$input" = "q" ] || [ "$input" = "Q" ]; then
-      info "No agents selected. Exiting."
-      exit $EXIT_NO_AGENTS
-    elif [ "$input" = "a" ] || [ "$input" = "A" ]; then
-      for i in "${!AGENT_IDS[@]}"; do
-        selected[$i]="${AGENT_DETECTED[$i]}"
-      done
-    elif [ "$input" = "n" ] || [ "$input" = "N" ]; then
-      clear_selection
     else
       if ! select_from_input "$input"; then
-        warn "No valid agent numbers found. Selection unchanged."
+        warn "No valid agent numbers found."
+        continue
       fi
+      break
     fi
   done
 
-  info "Selected: ${SELECTED_AGENTS[*]}"
+  if [ ${#SELECTED_AGENTS[@]} -gt 0 ]; then
+    info "Selected: ${SELECTED_AGENTS[*]}"
+  fi
 }
 
 prompt_agent_selection() {
@@ -579,7 +549,7 @@ build_selected_agents() {
   fi
 
   # 3. TTY check
-  if [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ]; then
+  if [ "${SPARK_FORCE_INTERACTIVE:-false}" = "true" ] || { [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ]; }; then
     show_interactive_menu
   else
     auto_install_detected  # fallback untuk CI/non-TTY
