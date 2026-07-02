@@ -71,6 +71,8 @@ FORCE=false
 HELP=false
 DRY_RUN=false
 UNINSTALL=false
+AUTO_INSTALL_YES=false
+MANUAL_AGENTS_ARG=""
 
 parse_args() {
   while [ $# -gt 0 ]; do
@@ -80,6 +82,8 @@ parse_args() {
       --dry-run)    DRY_RUN=true ;;
       -u|--uninstall) UNINSTALL=true ;;
       -h|--help)    HELP=true ;;
+      -y|--yes)     AUTO_INSTALL_YES=true ;;
+      --agent=*)    MANUAL_AGENTS_ARG="${1#*=}" ;;
       *)
         error "Unknown argument: $1"
         echo "Run with --help for usage."
@@ -411,24 +415,32 @@ get_target_dir() {
 
   if [ "$SCOPE" = "global" ]; then
     case "$agent_id" in
-      claude)   echo "$home/.claude" ;;
-      codex)    echo "$home/.codex" ;;
-      cursor)   echo "$home/.cursor/plugins/spark" ;;
-      kimi)     echo "$home/.kimi" ;;
-      opencode) echo "${OPENCODE_CONFIG_DIR:-$home/.config/opencode}" ;;
-      pi)       echo "${PI_HOME:-$home/.pi}" ;;
-      *)        echo "$home/.$agent_id" ;;
+      claude-code) echo "$home/.claude" ;;
+      codex-cli)   echo "$home/.codex" ;;
+      cursor)      echo "$home/.cursor/plugins/spark" ;;
+      antigravity) echo "$home/.agy" ;;
+      gemini)      echo "$home/.gemini" ;;
+      copilot)     echo "$home/.copilot" ;;
+      kimi)        echo "$home/.kimi" ;;
+      opencode)    echo "${OPENCODE_CONFIG_DIR:-$home/.config/opencode}" ;;
+      factory)     echo "$home/.factory" ;;
+      pi)          echo "${PI_HOME:-$home/.pi}" ;;
+      *)           echo "$home/.$agent_id" ;;
     esac
   else
     # Project scope: relative to current working directory
     case "$agent_id" in
-      claude)   echo "$(pwd)/.claude" ;;
-      codex)    echo "$(pwd)/.codex" ;;
-      cursor)   echo "$(pwd)/.cursor" ;;
-      kimi)     echo "$(pwd)/.kimi" ;;
-      opencode) echo "$(pwd)/.opencode" ;;
-      pi)       echo "$(pwd)/.pi" ;;
-      *)        echo "$(pwd)/.$agent_id" ;;
+      claude-code) echo "$(pwd)/.claude" ;;
+      codex-cli)   echo "$(pwd)/.codex" ;;
+      cursor)      echo "$(pwd)/.cursor" ;;
+      antigravity) echo "$(pwd)/.agy" ;;
+      gemini)      echo "$(pwd)/.gemini" ;;
+      copilot)     echo "$(pwd)/.github" ;;
+      kimi)        echo "$(pwd)/.kimi" ;;
+      opencode)    echo "$(pwd)/.opencode" ;;
+      factory)     echo "$(pwd)/.factory" ;;
+      pi)          echo "$(pwd)/.pi" ;;
+      *)           echo "$(pwd)/.$agent_id" ;;
     esac
   fi
 }
@@ -503,12 +515,12 @@ get_agent_hook_files() {
   local agent_id="$1"
 
   case "$agent_id" in
-    claude)
+    claude-code)
       echo "hooks/hooks.json"
       echo "hooks/run-hook.cmd"
       echo "hooks/session-start"
       ;;
-    codex)
+    codex-cli)
       echo "hooks/hooks-codex.json"
       echo "hooks/run-hook.cmd"
       echo "hooks/session-start-codex"
@@ -518,14 +530,8 @@ get_agent_hook_files() {
       echo "hooks/run-hook.cmd"
       echo "hooks/session-start"
       ;;
-    kimi)
-      # Kimi uses sessionStart field in plugin.json, no separate hook files
-      ;;
-    opencode)
-      # OpenCode uses plugin JS for bootstrap, no separate hook files
-      ;;
-    pi)
-      # Pi uses extension TS for bootstrap, no separate hook files
+    kimi|opencode|pi|antigravity|gemini|copilot|factory)
+      # Using native/other bootstrap methods, no separate hook files needed here
       ;;
   esac
 }
@@ -535,12 +541,13 @@ get_agent_manifest_files() {
   local agent_id="$1"
 
   case "$agent_id" in
-    claude)   echo ".claude-plugin/plugin.json" ;;
-    codex)    echo ".codex-plugin/plugin.json" ;;
-    cursor)   echo ".cursor-plugin/plugin.json" ;;
-    kimi)     echo ".kimi-plugin/plugin.json" ;;
-    opencode) echo ".opencode/plugins/spark.js" ;;
-    pi)       echo ".pi/extensions/spark.ts" ;;
+    claude-code) echo ".claude-plugin/plugin.json" ;;
+    codex-cli)   echo ".codex-plugin/plugin.json" ;;
+    cursor)      echo ".cursor-plugin/plugin.json" ;;
+    kimi)        echo ".kimi-plugin/plugin.json" ;;
+    opencode)    echo ".opencode/plugins/spark.js" ;;
+    pi)          echo ".pi/extensions/spark.ts" ;;
+    *)           ;;
   esac
 }
 
@@ -917,6 +924,17 @@ main() {
 
   # Step 6: Install for each selected agent
   echo ""
+  local selected_labels=()
+  for agent_id in "${SELECTED_AGENTS[@]}"; do
+    for i in "${!AGENT_IDS[@]}"; do
+      if [ "${AGENT_IDS[$i]}" = "$agent_id" ]; then
+        selected_labels+=("${AGENT_LABELS[$i]}")
+      fi
+    done
+  done
+  local labels_str="${selected_labels[*]}"
+  labels_str="${labels_str// /, }"
+  echo "Installing to: $labels_str"
   header "Installing"
 
   local total=${#SELECTED_AGENTS[@]}
