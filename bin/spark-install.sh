@@ -152,20 +152,40 @@ resolve_spark_root() {
 }
 
 detect_version() {
-  # Try git tag first
-  if command -v git >/dev/null 2>&1 && [ -d "$SPARK_ROOT/.git" ]; then
-    SPARK_COMMIT="$(git -C "$SPARK_ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")"
-    SPARK_VERSION="$(git -C "$SPARK_ROOT" describe --tags --always 2>/dev/null || echo "")"
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+  # Read version from bundled package.json (relative to script location)
+  if command -v node >/dev/null 2>&1 && [ -f "$script_dir/../package.json" ]; then
+    SPARK_VERSION="$(node -e "console.log(require('$script_dir/../package.json').version)" 2>/dev/null || echo "")"
   fi
 
-  # Fallback: parse version from package.json without jq
-  if [ -z "$SPARK_VERSION" ] && [ -f "$SPARK_ROOT/package.json" ]; then
-    # Simple grep-based extraction — no jq required
-    SPARK_VERSION="$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$SPARK_ROOT/package.json" | head -1 | grep -o '"[^"]*"$' | tr -d '"')"
+  # Fallback: parse version from package.json without jq/node
+  if [ -z "$SPARK_VERSION" ] && [ -f "$script_dir/../package.json" ]; then
+    SPARK_VERSION="$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$script_dir/../package.json" | head -1 | grep -o '"[^"]*"$' | tr -d '"')"
   fi
 
   if [ -z "$SPARK_VERSION" ]; then SPARK_VERSION="unknown"; fi
-  if [ -z "$SPARK_COMMIT" ]; then SPARK_COMMIT="unknown"; fi
+
+  # Detect git commit SHA only if git repo exists
+  if command -v git >/dev/null 2>&1 && [ -d "$SPARK_ROOT/.git" ]; then
+    SPARK_COMMIT="$(git -C "$SPARK_ROOT" rev-parse HEAD 2>/dev/null || echo "n/a")"
+  else
+    SPARK_COMMIT="n/a"
+  fi
+}
+
+check_registry_version() {
+  if ! command -v npm >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local latest
+  latest="$(npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
+  if [ -n "$latest" ] && [ "$SPARK_VERSION" != "$latest" ] && [ "$SPARK_VERSION" != "unknown" ]; then
+    warn "Newer version available: $latest"
+    printf "    Run: npm cache clean --force && rm -rf ~/.npm/_npx/ && npx @adityaaria/spark@latest install --force\n" >&2
+  fi
 }
 
 # =============================================================================
@@ -415,32 +435,32 @@ get_target_dir() {
 
   if [ "$SCOPE" = "global" ]; then
     case "$agent_id" in
-      claude-code) echo "$home/.claude" ;;
-      codex-cli)   echo "$home/.codex" ;;
-      cursor)      echo "$home/.cursor/plugins/spark" ;;
-      antigravity) echo "$home/.agy" ;;
-      gemini)      echo "$home/.gemini" ;;
-      copilot)     echo "$home/.copilot" ;;
-      kimi)        echo "$home/.kimi" ;;
-      opencode)    echo "${OPENCODE_CONFIG_DIR:-$home/.config/opencode}" ;;
-      factory)     echo "$home/.factory" ;;
-      pi)          echo "${PI_HOME:-$home/.pi}" ;;
-      *)           echo "$home/.$agent_id" ;;
+      claude|claude-code) echo "$home/.claude" ;;
+      codex|codex-cli)    echo "$home/.codex" ;;
+      cursor)             echo "$home/.cursor/plugins/spark" ;;
+      antigravity)        echo "$home/.agy" ;;
+      gemini)             echo "$home/.gemini" ;;
+      copilot)            echo "$home/.copilot" ;;
+      kimi)               echo "$home/.kimi" ;;
+      opencode)           echo "${OPENCODE_CONFIG_DIR:-$home/.config/opencode}" ;;
+      factory)            echo "$home/.factory" ;;
+      pi)                 echo "${PI_HOME:-$home/.pi}" ;;
+      *)                  echo "$home/.$agent_id" ;;
     esac
   else
     # Project scope: relative to current working directory
     case "$agent_id" in
-      claude-code) echo "$(pwd)/.claude" ;;
-      codex-cli)   echo "$(pwd)/.codex" ;;
-      cursor)      echo "$(pwd)/.cursor" ;;
-      antigravity) echo "$(pwd)/.agy" ;;
-      gemini)      echo "$(pwd)/.gemini" ;;
-      copilot)     echo "$(pwd)/.github" ;;
-      kimi)        echo "$(pwd)/.kimi" ;;
-      opencode)    echo "$(pwd)/.opencode" ;;
-      factory)     echo "$(pwd)/.factory" ;;
-      pi)          echo "$(pwd)/.pi" ;;
-      *)           echo "$(pwd)/.$agent_id" ;;
+      claude|claude-code) echo "$(pwd)/.claude" ;;
+      codex|codex-cli)    echo "$(pwd)/.codex" ;;
+      cursor)             echo "$(pwd)/.cursor" ;;
+      antigravity)        echo "$(pwd)/.agy" ;;
+      gemini)             echo "$(pwd)/.gemini" ;;
+      copilot)            echo "$(pwd)/.github" ;;
+      kimi)               echo "$(pwd)/.kimi" ;;
+      opencode)           echo "$(pwd)/.opencode" ;;
+      factory)            echo "$(pwd)/.factory" ;;
+      pi)                 echo "$(pwd)/.pi" ;;
+      *)                  echo "$(pwd)/.$agent_id" ;;
     esac
   fi
 }
@@ -515,12 +535,12 @@ get_agent_hook_files() {
   local agent_id="$1"
 
   case "$agent_id" in
-    claude-code)
+    claude|claude-code)
       echo "hooks/hooks.json"
       echo "hooks/run-hook.cmd"
       echo "hooks/session-start"
       ;;
-    codex-cli)
+    codex|codex-cli)
       echo "hooks/hooks-codex.json"
       echo "hooks/run-hook.cmd"
       echo "hooks/session-start-codex"
@@ -541,8 +561,8 @@ get_agent_manifest_files() {
   local agent_id="$1"
 
   case "$agent_id" in
-    claude-code) echo ".claude-plugin/plugin.json" ;;
-    codex-cli)   echo ".codex-plugin/plugin.json" ;;
+    claude|claude-code) echo ".claude-plugin/plugin.json" ;;
+    codex|codex-cli)    echo ".codex-plugin/plugin.json" ;;
     cursor)      echo ".cursor-plugin/plugin.json" ;;
     kimi)        echo ".kimi-plugin/plugin.json" ;;
     opencode)    echo ".opencode/plugins/spark.js" ;;
@@ -900,7 +920,12 @@ main() {
   resolve_spark_root
   detect_version
   info "SPARK root: $SPARK_ROOT"
-  info "Version: $SPARK_VERSION (${SPARK_COMMIT:0:12})"
+  if [ "$SPARK_COMMIT" != "n/a" ] && [ "$SPARK_COMMIT" != "unknown" ]; then
+    info "Version: $SPARK_VERSION (${SPARK_COMMIT:0:12})"
+  else
+    info "Version: $SPARK_VERSION"
+  fi
+  check_registry_version
 
   # Step 2: Check existing install
   check_existing_install
