@@ -20,6 +20,12 @@ export async function run(argv = [], env = process.env) {
     return;
   }
 
+  if (command === 'update') {
+    // Forward the args and append --update
+    await runInstall([...args, '--update'], env);
+    return;
+  }
+
   if (command === 'dashboard' || command === 'ui') {
     const { startDashboard } = await import('../dashboard/server.js');
     startDashboard();

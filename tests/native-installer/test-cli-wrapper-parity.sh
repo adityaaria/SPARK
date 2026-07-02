@@ -104,8 +104,8 @@ fi
 
 # 2b. Verify lock file content parity (normalizing timestamps and run paths)
 if [ -f "$dir_node/.spark-lock.json" ] && [ -f "$dir_bash/.spark-lock.json" ]; then
-    norm_lock_node="$(sed -e "s|$dir_node|NORM_DIR|g" -e "s/\"installed_at\": \"[^\"]*\"/\"installed_at\": \"NORM_TIME\"/g" "$dir_node/.spark-lock.json")"
-    norm_lock_bash="$(sed -e "s|$dir_bash|NORM_DIR|g" -e "s/\"installed_at\": \"[^\"]*\"/\"installed_at\": \"NORM_TIME\"/g" "$dir_bash/.spark-lock.json")"
+    norm_lock_node="$(sed -e "s|$dir_node|NORM_DIR|g" -e "s/\"installed_at\": \"[^\"]*\"/\"installed_at\": \"NORM_TIME\"/g" -e "s/\"installedAt\": \"[^\"]*\"/\"installedAt\": \"NORM_TIME\"/g" "$dir_node/.spark-lock.json")"
+    norm_lock_bash="$(sed -e "s|$dir_bash|NORM_DIR|g" -e "s/\"installed_at\": \"[^\"]*\"/\"installed_at\": \"NORM_TIME\"/g" -e "s/\"installedAt\": \"[^\"]*\"/\"installedAt\": \"NORM_TIME\"/g" "$dir_bash/.spark-lock.json")"
 
     if [ "$norm_lock_node" = "$norm_lock_bash" ]; then
         pass ".spark-lock.json content is identical (ignoring path & timestamp differences)"

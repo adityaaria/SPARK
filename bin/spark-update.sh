@@ -83,6 +83,7 @@ parse_args() {
       --dry-run)    DRY_RUN=true ;;
       -v|--verbose) VERBOSE=true ;;
       -h|--help)    HELP=true ;;
+      --update)     ;; # Ignore when forwarded from install gateway
       --agent=*)    TARGET_AGENTS_ARG="${1#*=}" ;;
       *)
         error "Unknown argument: $1"
