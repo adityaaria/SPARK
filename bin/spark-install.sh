@@ -182,19 +182,41 @@ detect_version() {
   fi
 }
 
+run_with_timeout_capture() {
+  local timeout_secs="$1"
+  shift
+
+  local tmp_out
+  tmp_out="$(mktemp)"
+
+  "$@" >"$tmp_out" 2>/dev/null &
+  local cmd_pid=$!
+  local elapsed=0
+
+  while kill -0 "$cmd_pid" 2>/dev/null; do
+    if [ "$elapsed" -ge "$timeout_secs" ]; then
+      kill "$cmd_pid" 2>/dev/null || true
+      wait "$cmd_pid" 2>/dev/null || true
+      rm -f "$tmp_out"
+      return 124
+    fi
+
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  wait "$cmd_pid" 2>/dev/null || true
+  cat "$tmp_out"
+  rm -f "$tmp_out"
+}
+
 check_registry_version() {
   if ! command -v npm >/dev/null 2>&1; then
     return 0
   fi
 
   local latest
-  if command -v timeout >/dev/null 2>&1; then
-    latest="$(timeout 5 npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
-  elif command -v gtimeout >/dev/null 2>&1; then
-    latest="$(gtimeout 5 npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
-  else
-    latest="$(npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
-  fi
+  latest="$(run_with_timeout_capture 5 npm show @adityaaria/spark version | tr -d '\r\n ' || echo "")"
   if [ -n "$latest" ] && [ "$SPARK_VERSION" != "$latest" ] && [ "$SPARK_VERSION" != "unknown" ]; then
     warn "Newer version available: $latest"
     printf "    Run: npm cache clean --force && rm -rf ~/.npm/_npx/ && npx @adityaaria/spark@latest install --force\n" >&2
@@ -416,6 +438,49 @@ show_interactive_menu() {
     selected[$i]="${AGENT_DETECTED[$i]}"
   done
 
+  clear_selection() {
+    for i in "${!AGENT_IDS[@]}"; do
+      selected[$i]="false"
+    done
+  }
+
+  select_from_input() {
+    local input="$1"
+    local new_selected=()
+    for i in "${!AGENT_IDS[@]}"; do
+      new_selected[$i]="false"
+    done
+
+    local normalized="$input"
+    normalized="${normalized//,/ }"
+
+    local has_valid_choice=false
+    for token in $normalized; do
+      local len=${#token}
+      local idx=0
+      while [ $idx -lt $len ]; do
+        local char="${token:$idx:1}"
+        if [[ "$char" =~ ^[0-9]$ ]] && [ "$char" -ge 0 ] && [ "$char" -lt "${#AGENT_IDS[@]}" ]; then
+          new_selected[$char]="true"
+          has_valid_choice=true
+        else
+          warn "Ignoring invalid choice: $char"
+        fi
+        idx=$((idx + 1))
+      done
+    done
+
+    if ! $has_valid_choice; then
+      return 1
+    fi
+
+    for i in "${!AGENT_IDS[@]}"; do
+      selected[$i]="${new_selected[$i]}"
+    done
+
+    return 0
+  }
+
   while true; do
     echo ""
     echo "Select which agents to install SPARK for:"
@@ -432,7 +497,7 @@ show_interactive_menu() {
       printf "  %s ${C_BOLD}%d)${C_RESET} %s\n" "$checkbox" "$i" "$label"
     done
     echo ""
-    printf "Enter 0-9 to toggle, 'a' for all detected, 'n' to clear, or Enter to confirm: "
+    printf "Enter agent numbers separated by spaces or commas, 'a' for all detected, 'n' to clear, or Enter to confirm: "
     read -r input || break
 
     if [ -z "$input" ]; then
@@ -455,29 +520,11 @@ show_interactive_menu() {
         selected[$i]="${AGENT_DETECTED[$i]}"
       done
     elif [ "$input" = "n" ] || [ "$input" = "N" ]; then
-      for i in "${!AGENT_IDS[@]}"; do
-        selected[$i]="false"
-      done
+      clear_selection
     else
-      local nums="$input"
-      nums="${nums//,/ }"
-      for num in $nums; do
-        local len=${#num}
-        local idx=0
-        while [ $idx -lt $len ]; do
-          local char="${num:$idx:1}"
-          if [[ "$char" =~ ^[0-9]$ ]] && [ "$char" -ge 0 ] && [ "$char" -lt "${#AGENT_IDS[@]}" ]; then
-            if [ "${selected[$char]}" = "true" ]; then
-              selected[$char]="false"
-            else
-              selected[$char]="true"
-            fi
-          else
-            warn "Ignoring invalid choice: $char"
-          fi
-          idx=$((idx + 1))
-        done
-      done
+      if ! select_from_input "$input"; then
+        warn "No valid agent numbers found. Selection unchanged."
+      fi
     fi
   done
 

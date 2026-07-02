@@ -16,6 +16,10 @@ ledger and the tool results carry the record.
 
 **Continuous execution:** Do not pause to check in with your human partner between tasks. Execute all tasks from the plan without stopping. The only reasons to stop are: BLOCKED status you cannot resolve, ambiguity that genuinely prevents progress, or all tasks complete. "Should I continue?" prompts and progress summaries waste their time — they asked you to execute the plan, so execute it.
 
+## Project Memory
+
+Before dispatching implementers in an existing repository, check whether `.docs/` exists for the relevant project root. If present, read the relevant memory files first and pass the necessary project memory into task context instead of re-deriving repository structure from scratch. If `.docs/` is missing or incomplete, fall back gracefully to direct repository inspection.
+
 ## When to Use
 
 ```dot

@@ -13,6 +13,10 @@ Random fixes waste time and create new bugs. Quick patches mask underlying issue
 
 **Violating the letter of this process is violating the spirit of debugging.**
 
+## Project Memory
+
+Before investigating a bug in an existing repository, check whether `.docs/` exists for the relevant project root. If it does, read the memory files that help locate architecture, APIs, domains, data flow, and testing strategy before tracing the failure. Do not rebuild baseline repository understanding from zero when project memory already exists. If `.docs/` is absent or incomplete, fall back gracefully to direct code inspection.
+
 ## The Iron Law
 
 ```

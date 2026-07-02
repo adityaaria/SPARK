@@ -7,6 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 INSTALLER="$REPO_ROOT/bin/spark-install.sh"
+PACKAGE_JSON="$REPO_ROOT/package.json"
 
 FAILURES=0
 PASSES=0
@@ -25,6 +26,10 @@ pass() {
 fail() {
     echo "  [FAIL] $1"
     FAILURES=$((FAILURES + 1))
+}
+
+read_package_version() {
+    grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$PACKAGE_JSON" | head -1 | grep -o '"[^"]*"$' | tr -d '"'
 }
 
 # =============================================================================
@@ -235,6 +240,31 @@ if [ ! -d "$dry_run_dir/.claude" ]; then
     pass "Dry-run did not make changes in filesystem"
 else
     fail "Dry-run made changes in filesystem"
+fi
+
+# Verify registry version check cannot hang installer when npm is slow/unreachable
+slow_npm_bin="$TEST_ROOT/slow-npm-bin"
+mkdir -p "$slow_npm_bin"
+cat > "$slow_npm_bin/npm" <<'EOF'
+#!/usr/bin/env bash
+sleep 30
+EOF
+chmod +x "$slow_npm_bin/npm"
+
+start_ts="$(date +%s)"
+slow_npm_output="$(cd "$dry_run_dir" && HOME="$TEST_ROOT/fake-home" PATH="$slow_npm_bin:$PATH" bash "$INSTALLER" --agent=claude-code --dry-run </dev/null 2>&1 || true)"
+elapsed_secs="$(( $(date +%s) - start_ts ))"
+
+if [ "$elapsed_secs" -lt 10 ]; then
+    pass "Installer bounds registry version check when npm hangs"
+else
+    fail "Installer hung too long during registry version check ($elapsed_secs seconds)"
+fi
+
+if echo "$slow_npm_output" | grep -q "\[DRY-RUN\] Would install for"; then
+    pass "Installer continues past registry check when npm hangs"
+else
+    fail "Installer did not continue after slow npm registry check"
 fi
 
 # =============================================================================
@@ -479,7 +509,8 @@ rm -f "$upd_dir/.spark-lock.json.bak" 2>/dev/null || true
 upd_out="$(cd "$upd_dir" && HOME="$upd_home" bash "$SCRIPT_DIR/../../bin/spark-update.sh" --yes 2>&1 || true)"
 
 # Verify lockfile is updated to current version and skills exist
-if grep -q '"version": "6.1.0"' "$upd_dir/.spark-lock.json" 2>/dev/null && [ -e "$upd_dir/.claude/skills/using-spark" ]; then
+current_version="$(read_package_version)"
+if grep -q "\"version\": \"$current_version\"" "$upd_dir/.spark-lock.json" 2>/dev/null && [ -e "$upd_dir/.claude/skills/using-spark" ]; then
     pass "Updater successfully upgraded from old version and updated .spark-lock.json atomically"
 else
     fail "Updater failed to upgrade or update lockfile properly"

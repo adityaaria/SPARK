@@ -13,6 +13,10 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **Note:** Tell your human partner that SPARK works much better with access to subagents. The quality of its work will be significantly higher if run on a platform with subagent support (Claude Code, Codex CLI, Codex App, Copilot CLI, and Gemini CLI all qualify; see the per-platform tool refs in `../using-spark/references/`). If subagents are available, use spark:subagent-driven-development instead of this skill.
 
+## Project Memory
+
+Before executing a plan in an existing repository, check whether `.docs/` exists for the relevant project root. If it does, read the memory files relevant to the planned work so execution stays aligned with the project's documented structure and contracts. If `.docs/` is unavailable or incomplete, fall back gracefully to direct code and plan inspection.
+
 ## The Process
 
 ### Step 1: Load and Review Plan

@@ -13,6 +13,10 @@ Claiming work is complete without verification is dishonesty, not efficiency.
 
 **Violating the letter of this rule is violating the spirit of this rule.**
 
+## Project Memory
+
+Before claiming requirements are met in an existing repository, check whether `.docs/` exists for the relevant project root. If it does, read the relevant memory files and verify the work against those documented contracts and structures instead of relying only on ad-hoc recollection. If `.docs/` is missing or incomplete, fall back gracefully to direct code and requirement inspection.
+
 ## The Iron Law
 
 ```

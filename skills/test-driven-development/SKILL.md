@@ -13,6 +13,10 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 **Violating the letter of the rules is violating the spirit of the rules.**
 
+## Project Memory
+
+Before implementing tests in an existing repository, check whether `.docs/` exists for the relevant project root. If it does, read the memory files relevant to architecture, APIs, domains, database boundaries, and existing testing strategy so the tests match the real project structure. If `.docs/` is missing or incomplete, fall back gracefully to direct repository inspection.
+
 ## When to Use
 
 **Always:**

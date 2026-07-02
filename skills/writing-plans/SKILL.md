@@ -15,6 +15,10 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** If working in an isolated worktree, it should have been created via the `spark:using-git-worktrees` skill at execution time.
 
+## Project Memory
+
+Before planning against an existing repository, check whether `.docs/` exists for the relevant project root. If present, read the relevant memory files first and use them to ground file selection, architecture assumptions, domain boundaries, and testing expectations. If `.docs/` is absent or incomplete, fall back gracefully to direct repository inspection.
+
 **Save plans to:** `docs/spark/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
 

@@ -9,6 +9,10 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 
 **Core principle:** Review early, review often.
 
+## Project Memory
+
+Before framing a review in an existing repository, check whether `.docs/` exists for the relevant project root. If present, read the relevant memory files first so the reviewer evaluates the diff against the project's documented architecture, contracts, domains, and testing strategy. If `.docs/` is absent or incomplete, fall back gracefully to direct repository inspection.
+
 ## When to Request Review
 
 **Mandatory:**
