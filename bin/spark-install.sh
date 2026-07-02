@@ -16,7 +16,7 @@ set -euo pipefail
 # Constants & Colors
 # =============================================================================
 
-readonly VERSION="1.0.0"
+VERSION="6.0.30"
 readonly LOCK_FILE_NAME=".spark-lock.json"
 
 # Colors (disabled if not a TTY)
@@ -71,6 +71,8 @@ FORCE=false
 HELP=false
 DRY_RUN=false
 UNINSTALL=false
+UPDATE=false
+VERBOSE=false
 AUTO_INSTALL_YES=false
 MANUAL_AGENTS_ARG=""
 
@@ -81,6 +83,8 @@ parse_args() {
       --force)      FORCE=true ;;
       --dry-run)    DRY_RUN=true ;;
       -u|--uninstall) UNINSTALL=true ;;
+      --update)     UPDATE=true ;;
+      -v|--verbose) VERBOSE=true ;;
       -h|--help)    HELP=true ;;
       -y|--yes)     AUTO_INSTALL_YES=true ;;
       --agent=*)    MANUAL_AGENTS_ARG="${1#*=}" ;;
@@ -173,6 +177,9 @@ detect_version() {
   else
     SPARK_COMMIT="n/a"
   fi
+  if [ -n "$SPARK_VERSION" ] && [ "$SPARK_VERSION" != "unknown" ]; then
+    VERSION="$SPARK_VERSION"
+  fi
 }
 
 check_registry_version() {
@@ -181,7 +188,13 @@ check_registry_version() {
   fi
 
   local latest
-  latest="$(npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
+  if command -v timeout >/dev/null 2>&1; then
+    latest="$(timeout 5 npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    latest="$(gtimeout 5 npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
+  else
+    latest="$(npm show @adityaaria/spark version 2>/dev/null | tr -d '\r\n ' || echo "")"
+  fi
   if [ -n "$latest" ] && [ "$SPARK_VERSION" != "$latest" ] && [ "$SPARK_VERSION" != "unknown" ]; then
     warn "Newer version available: $latest"
     printf "    Run: npm cache clean --force && rm -rf ~/.npm/_npx/ && npx @adityaaria/spark@latest install --force\n" >&2
@@ -269,28 +282,28 @@ detect_agents() {
   local home="${HOME:-}"
   [ -z "$home" ] && home="$(eval echo ~)"
 
-  # Claude Code: ~/.claude/ or claude binary or CLAUDE_PLUGIN_ROOT env
-  if [ -d "$home/.claude" ] || [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] || command_exists claude; then
+  # 1. Claude Code
+  if [ -d "$home/.claude" ] || [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] || command_exists claude || command_exists claude-code; then
     local reason=""
     [ -d "$home/.claude" ] && reason="config:~/.claude"
     [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && reason="${reason:+$reason, }env:CLAUDE_PLUGIN_ROOT"
-    command_exists claude && reason="${reason:+$reason, }path:claude"
-    register_agent "claude" "Claude Code" "true" "$reason"
+    (command_exists claude || command_exists claude-code) && reason="${reason:+$reason, }path:claude"
+    register_agent "claude-code" "Claude Code" "true" "$reason"
   else
-    register_agent "claude" "Claude Code" "false" ""
+    register_agent "claude-code" "Claude Code" "false" ""
   fi
 
-  # Codex CLI: ~/.codex/ or codex binary
-  if [ -d "$home/.codex" ] || command_exists codex; then
+  # 2. Codex CLI
+  if [ -d "$home/.codex" ] || command_exists codex || command_exists codex-cli; then
     local reason=""
     [ -d "$home/.codex" ] && reason="config:~/.codex"
-    command_exists codex && reason="${reason:+$reason, }path:codex"
-    register_agent "codex" "Codex CLI" "true" "$reason"
+    (command_exists codex || command_exists codex-cli) && reason="${reason:+$reason, }path:codex"
+    register_agent "codex-cli" "Codex CLI" "true" "$reason"
   else
-    register_agent "codex" "Codex CLI" "false" ""
+    register_agent "codex-cli" "Codex CLI" "false" ""
   fi
 
-  # Cursor: ~/.cursor/ or CURSOR_PLUGIN_ROOT env or cursor binary
+  # 3. Cursor
   if [ -d "$home/.cursor" ] || [ -n "${CURSOR_PLUGIN_ROOT:-}" ] || command_exists cursor; then
     local reason=""
     [ -d "$home/.cursor" ] && reason="config:~/.cursor"
@@ -301,7 +314,37 @@ detect_agents() {
     register_agent "cursor" "Cursor" "false" ""
   fi
 
-  # Kimi: ~/.kimi/ or kimi binary
+  # 4. Antigravity
+  if [ -d "$home/.agy" ] || command_exists agy || command_exists antigravity; then
+    local reason=""
+    [ -d "$home/.agy" ] && reason="config:~/.agy"
+    (command_exists agy || command_exists antigravity) && reason="${reason:+$reason, }path:agy"
+    register_agent "antigravity" "Antigravity" "true" "$reason"
+  else
+    register_agent "antigravity" "Antigravity" "false" ""
+  fi
+
+  # 5. Gemini
+  if [ -d "$home/.gemini" ] || command_exists gemini; then
+    local reason=""
+    [ -d "$home/.gemini" ] && reason="config:~/.gemini"
+    command_exists gemini && reason="${reason:+$reason, }path:gemini"
+    register_agent "gemini" "Gemini CLI" "true" "$reason"
+  else
+    register_agent "gemini" "Gemini CLI" "false" ""
+  fi
+
+  # 6. Copilot
+  if [ -d "$home/.copilot" ] || command_exists copilot || command_exists gh-copilot; then
+    local reason=""
+    [ -d "$home/.copilot" ] && reason="config:~/.copilot"
+    (command_exists copilot || command_exists gh-copilot) && reason="${reason:+$reason, }path:copilot"
+    register_agent "copilot" "GitHub Copilot" "true" "$reason"
+  else
+    register_agent "copilot" "GitHub Copilot" "false" ""
+  fi
+
+  # 7. Kimi
   if [ -d "$home/.kimi" ] || command_exists kimi; then
     local reason=""
     [ -d "$home/.kimi" ] && reason="config:~/.kimi"
@@ -311,11 +354,11 @@ detect_agents() {
     register_agent "kimi" "Kimi Code" "false" ""
   fi
 
-  # OpenCode: ~/.config/opencode/ or OPENCODE_CONFIG_DIR or opencode binary
+  # 8. OpenCode
   local oc_config="${OPENCODE_CONFIG_DIR:-$home/.config/opencode}"
-  if [ -d "$oc_config" ] || command_exists opencode; then
+  if [ -d "$oc_config" ] || [ -d "$home/.opencode" ] || command_exists opencode; then
     local reason=""
-    [ -d "$oc_config" ] && reason="config:$oc_config"
+    [ -d "$oc_config" ] || [ -d "$home/.opencode" ] && reason="config:opencode"
     [ -n "${OPENCODE_CONFIG_DIR:-}" ] && reason="${reason:+$reason, }env:OPENCODE_CONFIG_DIR"
     command_exists opencode && reason="${reason:+$reason, }path:opencode"
     register_agent "opencode" "OpenCode" "true" "$reason"
@@ -323,10 +366,20 @@ detect_agents() {
     register_agent "opencode" "OpenCode" "false" ""
   fi
 
-  # Pi: PI_HOME env or pi binary
-  if [ -n "${PI_HOME:-}" ] || command_exists pi; then
+  # 9. Factory
+  if [ -d "$home/.factory" ] || command_exists factory || command_exists droid; then
     local reason=""
-    [ -n "${PI_HOME:-}" ] && reason="env:PI_HOME"
+    [ -d "$home/.factory" ] && reason="config:~/.factory"
+    (command_exists factory || command_exists droid) && reason="${reason:+$reason, }path:factory"
+    register_agent "factory" "Factory Droid" "true" "$reason"
+  else
+    register_agent "factory" "Factory Droid" "false" ""
+  fi
+
+  # 10. Pi
+  if [ -n "${PI_HOME:-}" ] || [ -d "$home/.pi" ] || command_exists pi; then
+    local reason=""
+    [ -n "${PI_HOME:-}" ] || [ -d "$home/.pi" ] && reason="config:~/.pi"
     command_exists pi && reason="${reason:+$reason, }path:pi"
     register_agent "pi" "Pi" "true" "$reason"
   else
@@ -357,67 +410,132 @@ detect_agents() {
 
 SELECTED_AGENTS=()
 
-prompt_agent_selection() {
-  # Check if stdin is a terminal
-  if [ ! -t 0 ]; then
-    error "No agents detected and stdin is not a terminal."
-    error "Run interactively or set agent config directories manually."
-    exit $EXIT_NO_AGENTS
-  fi
-
-  echo ""
-  warn "No coding agents detected automatically."
-  echo ""
-  echo "Select which agents to install SPARK for:"
-  echo ""
-
+show_interactive_menu() {
+  local selected=()
   for i in "${!AGENT_IDS[@]}"; do
-    printf "  ${C_BOLD}%d)${C_RESET} %s\n" "$((i + 1))" "${AGENT_LABELS[$i]}"
+    selected[$i]="${AGENT_DETECTED[$i]}"
   done
 
-  echo ""
-  printf "Enter numbers separated by spaces (e.g. '1 3 5'), or 'q' to quit: "
-  read -r selection
+  while true; do
+    echo ""
+    echo "Select which agents to install SPARK for:"
+    echo ""
+    for i in "${!AGENT_IDS[@]}"; do
+      local checkbox="[ ]"
+      if [ "${selected[$i]}" = "true" ]; then
+        checkbox="[${C_GREEN}x${C_RESET}]"
+      fi
+      local label="${AGENT_LABELS[$i]}"
+      if [ "${AGENT_DETECTED[$i]}" = "true" ]; then
+        label="$label ${C_GREEN}(detected)${C_RESET}"
+      fi
+      printf "  %s ${C_BOLD}%d)${C_RESET} %s\n" "$checkbox" "$i" "$label"
+    done
+    echo ""
+    printf "Enter 0-9 to toggle, 'a' for all detected, 'n' to clear, or Enter to confirm: "
+    read -r input || break
 
-  if [ "$selection" = "q" ] || [ "$selection" = "Q" ] || [ -z "$selection" ]; then
-    info "No agents selected. Exiting."
-    exit $EXIT_NO_AGENTS
-  fi
-
-  for num in $selection; do
-    # Validate: must be a number in range
-    if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le "${#AGENT_IDS[@]}" ]; then
-      local idx=$((num - 1))
-      SELECTED_AGENTS+=("${AGENT_IDS[$idx]}")
+    if [ -z "$input" ]; then
+      # Enter pressed: confirm selection
+      for i in "${!AGENT_IDS[@]}"; do
+        if [ "${selected[$i]}" = "true" ]; then
+          SELECTED_AGENTS+=("${AGENT_IDS[$i]}")
+        fi
+      done
+      if [ ${#SELECTED_AGENTS[@]} -eq 0 ]; then
+        warn "No agents selected. Please select at least one agent or enter 'q' to quit."
+        continue
+      fi
+      break
+    elif [ "$input" = "q" ] || [ "$input" = "Q" ]; then
+      info "No agents selected. Exiting."
+      exit $EXIT_NO_AGENTS
+    elif [ "$input" = "a" ] || [ "$input" = "A" ]; then
+      for i in "${!AGENT_IDS[@]}"; do
+        selected[$i]="${AGENT_DETECTED[$i]}"
+      done
+    elif [ "$input" = "n" ] || [ "$input" = "N" ]; then
+      for i in "${!AGENT_IDS[@]}"; do
+        selected[$i]="false"
+      done
     else
-      warn "Ignoring invalid selection: $num"
+      local nums="$input"
+      nums="${nums//,/ }"
+      for num in $nums; do
+        local len=${#num}
+        local idx=0
+        while [ $idx -lt $len ]; do
+          local char="${num:$idx:1}"
+          if [[ "$char" =~ ^[0-9]$ ]] && [ "$char" -ge 0 ] && [ "$char" -lt "${#AGENT_IDS[@]}" ]; then
+            if [ "${selected[$char]}" = "true" ]; then
+              selected[$char]="false"
+            else
+              selected[$char]="true"
+            fi
+          else
+            warn "Ignoring invalid choice: $char"
+          fi
+          idx=$((idx + 1))
+        done
+      done
     fi
   done
-
-  if [ ${#SELECTED_AGENTS[@]} -eq 0 ]; then
-    error "No valid agents selected."
-    exit $EXIT_NO_AGENTS
-  fi
 
   info "Selected: ${SELECTED_AGENTS[*]}"
 }
 
-build_selected_agents() {
-  # If agents were detected, use those. Otherwise, use manual selection.
+prompt_agent_selection() {
+  show_interactive_menu
+}
+
+auto_install_detected() {
   local detected_count=0
   for i in "${!AGENT_IDS[@]}"; do
-    [ "${AGENT_DETECTED[$i]}" = "true" ] && detected_count=$((detected_count + 1))
+    if [ "${AGENT_DETECTED[$i]}" = "true" ]; then
+      SELECTED_AGENTS+=("${AGENT_IDS[$i]}")
+      detected_count=$((detected_count + 1))
+    fi
   done
+  if [ "$detected_count" -eq 0 ]; then
+    error "No coding agents detected automatically."
+    error "Run interactively or specify target agent with --agent=<names>."
+    exit $EXIT_NO_AGENTS
+  fi
+  info "Auto-selecting detected agents: ${SELECTED_AGENTS[*]}"
+}
 
-  if [ $detected_count -eq 0 ]; then
-    prompt_agent_selection
-  else
-    # Use all detected agents
-    for i in "${!AGENT_IDS[@]}"; do
-      if [ "${AGENT_DETECTED[$i]}" = "true" ]; then
-        SELECTED_AGENTS+=("${AGENT_IDS[$i]}")
-      fi
+build_selected_agents() {
+  # 1. Manual argument (--agent=name1,name2)
+  if [ -n "$MANUAL_AGENTS_ARG" ]; then
+    localIFS="$IFS"
+    IFS=','
+    for arg in $MANUAL_AGENTS_ARG; do
+      arg="$(echo "$arg" | tr -d ' ')"
+      for i in "${!AGENT_IDS[@]}"; do
+        if [ "${AGENT_IDS[$i]}" = "$arg" ] || [ "${AGENT_LABELS[$i]}" = "$arg" ]; then
+          SELECTED_AGENTS+=("${AGENT_IDS[$i]}")
+        fi
+      done
     done
+    IFS="$localIFS"
+    if [ ${#SELECTED_AGENTS[@]} -eq 0 ]; then
+      error "No matching agents found for --agent=$MANUAL_AGENTS_ARG"
+      exit $EXIT_NO_AGENTS
+    fi
+    return
+  fi
+
+  # 2. Non-interactive flag (-y / --yes)
+  if [ "$AUTO_INSTALL_YES" = "true" ]; then
+    auto_install_detected
+    return
+  fi
+
+  # 3. TTY check
+  if [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ]; then
+    show_interactive_menu
+  else
+    auto_install_detected  # fallback untuk CI/non-TTY
   fi
 }
 
@@ -485,8 +603,9 @@ link_or_copy() {
       rm -rf "$target"
     else
       warn "Target already exists (not a symlink): $target"
-      warn "Use --force to overwrite"
-      return 1
+      warn "Use --force to overwrite. Skipping."
+      echo "existing"
+      return 0
     fi
   fi
 
@@ -589,11 +708,17 @@ install_for_agent() {
     return 1
   fi
 
+  local skills_target="$target_dir/skills"
+  if [ -e "$skills_target" ] && ! $FORCE; then
+    warn "Skills directory already exists for $agent_id at $skills_target. Skipping (use --force to overwrite)."
+    INSTALL_RESULTS+=("$agent_id:existing")
+    return 0
+  fi
+
   local method="symlink"
   local hooks_installed=false
 
   # 1. Install skills — symlink the entire skills/ directory
-  local skills_target="$target_dir/skills"
   local result
   result="$(link_or_copy "$SPARK_ROOT/skills" "$skills_target")" || {
     error "Failed to install skills for $agent_id"
@@ -705,6 +830,7 @@ write_lock_file() {
   fi
 
   # Build agents JSON manually (no jq dependency)
+  local agents_arr_str=""
   local agents_json=""
   for entry in "${INSTALL_RESULTS[@]}"; do
     local agent_id method hooks_installed
@@ -715,26 +841,40 @@ write_lock_file() {
     local target_dir
     target_dir="$(get_target_dir "$agent_id")"
 
+    [ -n "$agents_arr_str" ] && agents_arr_str="$agents_arr_str, "
+    agents_arr_str="$agents_arr_str\"$agent_id\""
+
     [ -n "$agents_json" ] && agents_json="$agents_json,"
     agents_json="$agents_json
     \"$agent_id\": {
       \"scope\": \"$SCOPE\",
       \"target\": \"$target_dir\",
       \"method\": \"$method\",
-      \"hooks_installed\": $hooks_installed
+      \"hooks_installed\": ${hooks_installed:-false}
     }"
   done
 
+  local inst_name="spark-install.sh"
+  if [ -n "${SPARK_INSTALLER:-}" ]; then
+    inst_name="$SPARK_INSTALLER"
+  elif [ -n "${npm_execpath:-}" ] || [ -n "${npm_config_user_agent:-}" ] || [[ "$SPARK_ROOT" =~ _npx ]]; then
+    inst_name="npx"
+  fi
+
   cat > "$lock_path" <<EOF
 {
-  "installer": "spark-install.sh",
+  "version": "$VERSION",
+  "installedAt": "$timestamp",
+  "sha": "$SPARK_COMMIT",
+  "scope": "$SCOPE",
+  "agents": [$agents_arr_str],
+  "installer": "$inst_name",
   "installer_version": "$VERSION",
   "spark_version": "$SPARK_VERSION",
   "commit": "$SPARK_COMMIT",
   "spark_root": "$SPARK_ROOT",
   "installed_at": "$timestamp",
-  "scope": "$SCOPE",
-  "agents": {$agents_json
+  "agents_map": {$agents_json
   }
 }
 EOF
@@ -762,7 +902,13 @@ check_existing_install() {
 
     # Parse existing lock file without jq
     existing_version="$(grep -o '"spark_version"[[:space:]]*:[[:space:]]*"[^"]*"' "$lock_path" 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"' || true)"
+    if [ -z "$existing_version" ]; then
+      existing_version="$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$lock_path" 2>/dev/null | head -1 | grep -o '"[^"]*"$' | tr -d '"' || true)"
+    fi
     existing_commit="$(grep -o '"commit"[[:space:]]*:[[:space:]]*"[^"]*"' "$lock_path" 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"' || true)"
+    if [ -z "$existing_commit" ]; then
+      existing_commit="$(grep -o '"sha"[[:space:]]*:[[:space:]]*"[^"]*"' "$lock_path" 2>/dev/null | head -1 | grep -o '"[^"]*"$' | tr -d '"' || true)"
+    fi
 
     echo ""
     warn "SPARK is already installed (version: ${existing_version:-unknown}, commit: ${existing_commit:-unknown})"
@@ -910,7 +1056,20 @@ main() {
   fi
 
   if $UNINSTALL; then
+    resolve_spark_root
+    if [ -f "$SPARK_ROOT/bin/spark-uninstall.sh" ]; then
+      bash "$SPARK_ROOT/bin/spark-uninstall.sh" "$@"
+      exit $?
+    fi
     perform_uninstall
+  fi
+
+  if $UPDATE; then
+    resolve_spark_root
+    if [ -f "$SPARK_ROOT/bin/spark-update.sh" ]; then
+      bash "$SPARK_ROOT/bin/spark-update.sh" "$@"
+      exit $?
+    fi
   fi
 
   header "SPARK Native Installer"
@@ -949,16 +1108,18 @@ main() {
 
   # Step 6: Install for each selected agent
   echo ""
-  local selected_labels=()
+  local labels_str=""
   for agent_id in "${SELECTED_AGENTS[@]}"; do
     for i in "${!AGENT_IDS[@]}"; do
       if [ "${AGENT_IDS[$i]}" = "$agent_id" ]; then
-        selected_labels+=("${AGENT_LABELS[$i]}")
+        if [ -z "$labels_str" ]; then
+          labels_str="${AGENT_LABELS[$i]}"
+        else
+          labels_str="$labels_str, ${AGENT_LABELS[$i]}"
+        fi
       fi
     done
   done
-  local labels_str="${selected_labels[*]}"
-  labels_str="${labels_str// /, }"
   echo "Installing to: $labels_str"
   header "Installing"
 

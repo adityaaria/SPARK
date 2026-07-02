@@ -222,13 +222,19 @@ mkdir -p "$dry_run_dir"
 
 # Run installer in dry-run mode with a fake HOME so no agents are detected
 # We need non-interactive, so we'll pipe empty input
-dry_output="$(cd "$dry_run_dir" && HOME="$TEST_ROOT/fake-home" bash "$INSTALLER" --dry-run </dev/null 2>&1 || true)"
+dry_output="$(cd "$dry_run_dir" && HOME="$TEST_ROOT/fake-home" bash "$INSTALLER" --agent=claude-code --dry-run </dev/null 2>&1 || true)"
 
 # Verify no lock file was created
 if [ ! -f "$dry_run_dir/.spark-lock.json" ]; then
     pass "Dry-run did not create lock file"
 else
     fail "Dry-run created lock file"
+fi
+
+if [ ! -d "$dry_run_dir/.claude" ]; then
+    pass "Dry-run did not make changes in filesystem"
+else
+    fail "Dry-run made changes in filesystem"
 fi
 
 # =============================================================================
@@ -291,6 +297,17 @@ else
     fail "Third install (no --force) did not detect existing install"
 fi
 
+# Remove lockfile and verify reinstall without --force warns on existing target directory and skips
+rm -f "$idem_dir/.spark-lock.json"
+echo "custom content" > "$idem_dir/.claude/skills/dummy.txt"
+idem_skip="$(cd "$idem_dir" && HOME="$idem_home" bash "$INSTALLER" 2>&1 || true)"
+if echo "$idem_skip" | grep -qi "already exists.*skipping" && grep -q "custom content" "$idem_dir/.claude/skills/dummy.txt" 2>/dev/null; then
+    pass "Reinstall without --force displays warning and does not overwrite files"
+else
+    fail "Reinstall without --force did not warn or protect existing files"
+fi
+rm -f "$idem_dir/.claude/skills/dummy.txt"
+
 # =============================================================================
 # Test 6: Lock file structure validation
 # =============================================================================
@@ -325,7 +342,7 @@ if [ -f "$lock_dir/.spark-lock.json" ]; then
     fi
 
     # Check claude agent is recorded
-    if echo "$lock" | grep -q '"claude"'; then
+    if echo "$lock" | grep -E -q '"claude-code"|"claude"'; then
         pass "Lock file records claude agent"
     else
         fail "Lock file does not record claude agent"
@@ -403,6 +420,69 @@ if [ -f "$hooks_dir/.claude/hooks/session-start" ]; then
     else
         fail "Installed session-start hook is not executable"
     fi
+fi
+
+# =============================================================================
+# Test 9: Uninstallation safety verification
+# =============================================================================
+
+echo ""
+echo "Uninstallation safety verification"
+
+uninst_dir="$TEST_ROOT/uninstall-test"
+uninst_home="$TEST_ROOT/uninstall-home"
+mkdir -p "$uninst_dir/.claude" "$uninst_dir/.cursor" "$uninst_home"
+
+# Create host agent configuration files that MUST NOT be deleted
+echo '{"custom": true}' > "$uninst_dir/.claude/config.json"
+echo '{"theme": "dark"}' > "$uninst_dir/.cursor/settings.json"
+
+# Install SPARK
+cd "$uninst_dir" && HOME="$uninst_home" bash "$INSTALLER" --agent=claude-code,cursor --force >/dev/null 2>&1 || true
+
+# Run uninstaller with --yes
+uninst_out="$(cd "$uninst_dir" && HOME="$uninst_home" bash "$SCRIPT_DIR/../../bin/spark-uninstall.sh" --yes 2>&1 || true)"
+
+# Verify SPARK files and lockfile are deleted
+if [ ! -e "$uninst_dir/.claude/skills" ] && [ ! -f "$uninst_dir/.spark-lock.json" ]; then
+    pass "Uninstaller cleanly removed SPARK skills and lockfile"
+else
+    fail "Uninstaller left SPARK skills or lockfile behind"
+fi
+
+# Verify host agent configuration files and directories STILL EXIST
+if [ -f "$uninst_dir/.claude/config.json" ] && [ -f "$uninst_dir/.cursor/settings.json" ]; then
+    pass "Uninstaller preserved host agent configuration files and directories without damage"
+else
+    fail "Uninstaller damaged or deleted host agent configuration files!"
+fi
+
+# =============================================================================
+# Test 10: Atomic update verification
+# =============================================================================
+
+echo ""
+echo "Atomic update verification"
+
+upd_dir="$TEST_ROOT/update-test"
+upd_home="$TEST_ROOT/update-home"
+mkdir -p "$upd_dir/.claude" "$upd_home"
+
+# Install SPARK first
+cd "$upd_dir" && HOME="$upd_home" bash "$INSTALLER" --agent=claude-code --force >/dev/null 2>&1 || true
+
+# Modify lockfile to simulate an older version
+sed -i.bak 's/"version": "[^"]*"/"version": "6.0.0"/' "$upd_dir/.spark-lock.json" 2>/dev/null || true
+rm -f "$upd_dir/.spark-lock.json.bak" 2>/dev/null || true
+
+# Run updater with --yes
+upd_out="$(cd "$upd_dir" && HOME="$upd_home" bash "$SCRIPT_DIR/../../bin/spark-update.sh" --yes 2>&1 || true)"
+
+# Verify lockfile is updated to current version and skills exist
+if grep -q '"version": "6.0.30"' "$upd_dir/.spark-lock.json" 2>/dev/null && [ -e "$upd_dir/.claude/skills/using-spark" ]; then
+    pass "Updater successfully upgraded from old version and updated .spark-lock.json atomically"
+else
+    fail "Updater failed to upgrade or update lockfile properly"
 fi
 
 # =============================================================================
