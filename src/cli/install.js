@@ -1,12 +1,21 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { printCommandHeader, printMuted } from './output.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function runInstall(args = [], env = process.env) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.resolve(__dirname, '../../bin/spark-install.sh');
+    const forwardedCommand = getForwardedCommand(args);
+
+    if (process.stdout.isTTY) {
+      printCommandHeader(forwardedCommand);
+      printMuted('Preparing native installer runtime...');
+      printMuted('');
+    }
+
     const child = spawn('bash', [scriptPath, ...args], {
       stdio: 'inherit',
       env,
@@ -37,4 +46,16 @@ export function runInstall(args = [], env = process.env) {
       resolve();
     });
   });
+}
+
+function getForwardedCommand(args) {
+  if (args.includes('--uninstall')) {
+    return 'Uninstall';
+  }
+
+  if (args.includes('--update')) {
+    return 'Update';
+  }
+
+  return 'Install';
 }

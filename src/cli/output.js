@@ -13,6 +13,7 @@ const COLORS = {
 };
 
 const useColor = process.stdout.isTTY && process.env.NO_COLOR !== '1';
+const DEFAULT_HEADER_WIDTH = 64;
 
 export function printLine(text = '') {
   process.stdout.write(`${text}\n`);
@@ -31,9 +32,25 @@ export function printHelp() {
 }
 
 export function printCommandHeader(title) {
-  printLine(styled('⚡', 'warning') + ' ' + styled('SPARK', 'spark', true) + ' ' + styled('›', 'dimGray') + ' ' + styled(title, 'white', true));
-  printLine(styled('Skills installer for coding agents', 'dimGray'));
-  printLine('');
+  const lines = buildCommandHeader(title);
+  for (const line of lines) {
+    printLine(line);
+  }
+}
+
+export function buildCommandHeader(title, options = {}) {
+  const width = Math.max(44, options.width ?? getTerminalWidth());
+  const colorize = options.colorize ?? useColor;
+  const titleText = `SPARK ${title}`;
+  const subtitle = 'Skills installer for coding agents';
+
+  return [
+    colorize ? styled('═'.repeat(width), 'dimGray') : '═'.repeat(width),
+    centerLine(titleText, width, { tone: 'white', accentTone: 'spark', accentWord: 'SPARK', bold: true, colorize }),
+    centerLine(subtitle, width, { tone: 'dimGray', colorize }),
+    colorize ? styled('═'.repeat(width), 'dimGray') : '═'.repeat(width),
+    '',
+  ];
 }
 
 export function printSection(title) {
@@ -123,4 +140,35 @@ function styled(text, tone, bold = false) {
   const color = COLORS[tone] ?? '';
   const weight = bold ? COLORS.bold : '';
   return `${weight}${color}${text}${COLORS.reset}`;
+}
+
+function centerLine(text, width, options = {}) {
+  const tone = options.tone ?? 'white';
+  const colorize = options.colorize ?? useColor;
+  const raw = text.length >= width ? text : text.padStart(Math.floor((width + text.length) / 2)).padEnd(width);
+
+  if (!colorize) {
+    return raw;
+  }
+
+  if (options.accentWord) {
+    const accentWord = options.accentWord;
+    const start = raw.indexOf(accentWord);
+    if (start >= 0) {
+      const before = raw.slice(0, start);
+      const highlighted = styled(accentWord, options.accentTone ?? tone, options.bold ?? false);
+      const after = styled(raw.slice(start + accentWord.length), tone, options.bold ?? false);
+      return `${styled(before, tone, options.bold ?? false)}${highlighted}${after}`;
+    }
+  }
+
+  return styled(raw, tone, options.bold ?? false);
+}
+
+function getTerminalWidth() {
+  if (!process.stdout.isTTY || !Number.isFinite(process.stdout.columns)) {
+    return DEFAULT_HEADER_WIDTH;
+  }
+
+  return Math.min(DEFAULT_HEADER_WIDTH, Math.max(44, process.stdout.columns));
 }

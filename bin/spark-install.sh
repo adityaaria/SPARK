@@ -562,6 +562,7 @@ build_selected_agents() {
 
 INSTALL_RESULTS=()   # "agent_id:method" pairs
 INSTALL_ERRORS=()
+GITIGNORE_ENTRIES=""
 
 # Determine target directory for a given agent
 get_target_dir() {
@@ -598,6 +599,51 @@ get_target_dir() {
       *)                  echo "$(pwd)/.$agent_id" ;;
     esac
   fi
+}
+
+register_gitignore_entry() {
+  local entry="$1"
+  [ "$SCOPE" != "project" ] && return 0
+  [ -z "$entry" ] && return 0
+
+  case "
+$GITIGNORE_ENTRIES
+" in
+    *"
+$entry
+"*) return 0 ;;
+  esac
+
+  if [ -n "$GITIGNORE_ENTRIES" ]; then
+    GITIGNORE_ENTRIES="$GITIGNORE_ENTRIES
+$entry"
+  else
+    GITIGNORE_ENTRIES="$entry"
+  fi
+}
+
+ensure_project_gitignore() {
+  [ "$SCOPE" != "project" ] && return 0
+  [ "$DRY_RUN" = "true" ] && return 0
+  if [ -z "$GITIGNORE_ENTRIES" ]; then
+    return 0
+  fi
+
+  local gitignore_path
+  gitignore_path="$(pwd)/.gitignore"
+  [ -f "$gitignore_path" ] || : > "$gitignore_path"
+
+  local entry
+  while IFS= read -r entry; do
+    [ -z "$entry" ] && continue
+    if ! grep -Fqx "$entry" "$gitignore_path" 2>/dev/null; then
+      printf "%s\n" "$entry" >> "$gitignore_path"
+    fi
+  done <<EOF
+$GITIGNORE_ENTRIES
+EOF
+
+  success "Updated .gitignore with SPARK-managed project artifacts"
 }
 
 # Try to create a symlink, fallback to copy
@@ -726,6 +772,7 @@ install_for_agent() {
   fi
 
   local skills_target="$target_dir/skills"
+  register_gitignore_entry "$(gitignore_pattern_for_path "$skills_target" "dir")"
   if [ -e "$skills_target" ] && ! $FORCE; then
     warn "Skills directory already exists for $agent_id at $skills_target. Skipping (use --force to overwrite)."
     INSTALL_RESULTS+=("$agent_id:existing")
@@ -751,6 +798,7 @@ install_for_agent() {
   if [ -n "$hook_files" ]; then
     local hooks_dir="$target_dir/hooks"
     mkdir -p "$hooks_dir"
+    register_gitignore_entry "$(gitignore_pattern_for_path "$hooks_dir" "dir")"
 
     while IFS= read -r hook_file; do
       [ -z "$hook_file" ] && continue
@@ -785,12 +833,14 @@ install_for_agent() {
           # OpenCode needs the plugin JS in its plugins directory
           local oc_plugins="$target_dir/plugins"
           mkdir -p "$oc_plugins"
+          register_gitignore_entry "$(gitignore_pattern_for_path "$oc_plugins" "dir")"
           copy_file "$source_path" "$oc_plugins/spark.js"
           ;;
         pi)
           # Pi needs the extension TS in its extensions directory
           local pi_ext="$target_dir/extensions"
           mkdir -p "$pi_ext"
+          register_gitignore_entry "$(gitignore_pattern_for_path "$pi_ext" "dir")"
           copy_file "$source_path" "$pi_ext/spark.ts"
           ;;
         *)
@@ -802,6 +852,7 @@ install_for_agent() {
           fi
           if [ -f "$source_path" ]; then
             mkdir -p "$plugin_dir"
+            register_gitignore_entry "$(gitignore_pattern_for_path "$plugin_dir" "dir")"
             copy_file "$source_path" "$plugin_dir/$manifest_basename"
           fi
           ;;
@@ -838,6 +889,7 @@ write_lock_file() {
   fi
 
   local lock_path="$lock_dir/$LOCK_FILE_NAME"
+  register_gitignore_entry "$(gitignore_pattern_for_path "$lock_path" "file")"
   local timestamp
   timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")"
 
@@ -897,6 +949,28 @@ write_lock_file() {
 EOF
 
   success "Lock file written to $lock_path"
+}
+
+gitignore_pattern_for_path() {
+  local target="$1"
+  local kind="${2:-file}"
+  local project_root
+  project_root="$(pwd)"
+
+  case "$target" in
+    "$project_root"/*)
+      target="${target#"$project_root"/}"
+      ;;
+  esac
+
+  target="${target#./}"
+  target="/$target"
+
+  if [ "$kind" = "dir" ]; then
+    target="${target%/}/"
+  fi
+
+  printf "%s" "$target"
 }
 
 # =============================================================================
@@ -1152,6 +1226,7 @@ main() {
   if [ ${#INSTALL_RESULTS[@]} -gt 0 ]; then
     echo ""
     write_lock_file
+    ensure_project_gitignore
   fi
 
   # Step 8: Summary

@@ -216,7 +216,45 @@ else
 fi
 
 # =============================================================================
-# Test 4: Dry-run mode doesn't modify filesystem
+# Test 4: Project-scope install auto-updates .gitignore
+# =============================================================================
+
+echo ""
+echo "Project .gitignore automation"
+
+gitignore_dir="$TEST_ROOT/gitignore-test"
+mkdir -p "$gitignore_dir"
+printf "# existing\n" > "$gitignore_dir/.gitignore"
+
+gitignore_output="$(cd "$gitignore_dir" && HOME="$TEST_ROOT/fake-home" bash "$INSTALLER" --agent=claude-code </dev/null 2>&1 || true)"
+
+if [ -f "$gitignore_dir/.gitignore" ]; then
+    if grep -q '^/.claude/skills/$' "$gitignore_dir/.gitignore" && \
+       grep -q '^/.claude/hooks/$' "$gitignore_dir/.gitignore" && \
+       grep -q '^/.claude-code-plugin/$' "$gitignore_dir/.gitignore" && \
+       grep -q '^/.spark-lock.json$' "$gitignore_dir/.gitignore"; then
+        pass "Project install auto-registers SPARK artifacts in .gitignore"
+    else
+        fail "Project install did not add all expected SPARK gitignore entries"
+        echo "$gitignore_output"
+        echo "---- .gitignore ----"
+        cat "$gitignore_dir/.gitignore"
+    fi
+else
+    fail ".gitignore missing after project install"
+fi
+
+(cd "$gitignore_dir" && HOME="$TEST_ROOT/fake-home" bash "$INSTALLER" --agent=claude-code --force </dev/null >/dev/null 2>&1 || true)
+
+dup_count="$(grep -c '^/.spark-lock.json$' "$gitignore_dir/.gitignore" || true)"
+if [ "$dup_count" -eq 1 ]; then
+    pass "SPARK gitignore entries are not duplicated on reinstall"
+else
+    fail "SPARK gitignore entries were duplicated on reinstall"
+fi
+
+# =============================================================================
+# Test 5: Dry-run mode doesn't modify filesystem
 # =============================================================================
 
 echo ""

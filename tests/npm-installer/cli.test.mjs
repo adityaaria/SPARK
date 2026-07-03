@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { buildCommandHeader } from '../../src/cli/output.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '../..');
@@ -38,6 +39,22 @@ test('CLI prints install help', () => {
   assert.match(result.stdout, /Wraps the native SPARK installer/i);
   assert.match(result.stdout, /--global/);
   assert.match(result.stdout, /--dry-run/);
+});
+
+test('CLI command header is center-aligned when rendered as plain text', () => {
+  const lines = buildCommandHeader('Install', { width: 48, colorize: false });
+
+  assert.equal(lines.length, 5);
+  assert.equal(lines[0].length, 48);
+  assert.equal(lines[1].length, 48);
+  assert.equal(lines[2].length, 48);
+  assert.equal(lines[3].length, 48);
+  assert.equal(lines[4], '');
+  assert.match(lines[1], /SPARK/);
+  assert.match(lines[1], /Install/);
+  assert.match(lines[2], /Skills installer for coding agents/);
+  assert.ok(lines[1].startsWith(' '), 'title row should be centered with left padding');
+  assert.ok(lines[2].startsWith(' '), 'subtitle row should be centered with left padding');
 });
 
 test('CLI dry-run forwards to spark-install.sh without touching filesystem', () => {
