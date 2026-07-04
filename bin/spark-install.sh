@@ -223,6 +223,15 @@ check_registry_version() {
   fi
 }
 
+write_file_atomically() {
+  local target_path="$1"
+  local tmp_path
+  tmp_path="$(mktemp "${target_path}.tmp.XXXXXX")"
+
+  cat > "$tmp_path"
+  mv "$tmp_path" "$target_path"
+}
+
 # =============================================================================
 # Skill & hook discovery
 # =============================================================================
@@ -524,7 +533,7 @@ auto_install_detected() {
 build_selected_agents() {
   # 1. Manual argument (--agent=name1,name2)
   if [ -n "$MANUAL_AGENTS_ARG" ]; then
-    localIFS="$IFS"
+    local old_ifs="$IFS"
     IFS=','
     for arg in $MANUAL_AGENTS_ARG; do
       arg="$(echo "$arg" | tr -d ' ')"
@@ -534,7 +543,7 @@ build_selected_agents() {
         fi
       done
     done
-    IFS="$localIFS"
+    IFS="$old_ifs"
     if [ ${#SELECTED_AGENTS[@]} -eq 0 ]; then
       error "No matching agents found for --agent=$MANUAL_AGENTS_ARG"
       exit $EXIT_NO_AGENTS
@@ -791,6 +800,12 @@ install_for_agent() {
   }
   [ -n "$result" ] && method="$result"
 
+  if [ ! -r "$skills_target/using-spark/SKILL.md" ]; then
+    error "Installed skills for $agent_id are incomplete or unreadable at $skills_target"
+    INSTALL_ERRORS+=("$agent_id:skills_unreadable")
+    return 1
+  fi
+
   # 2. Install hooks (for shell-hook agents)
   local hook_files
   hook_files="$(get_agent_hook_files "$agent_id")"
@@ -930,7 +945,7 @@ write_lock_file() {
     inst_name="npx"
   fi
 
-  cat > "$lock_path" <<EOF
+  write_file_atomically "$lock_path" <<EOF
 {
   "version": "$VERSION",
   "installedAt": "$timestamp",
@@ -1161,6 +1176,8 @@ main() {
       bash "$SPARK_ROOT/bin/spark-update.sh" "$@"
       exit $?
     fi
+    error "Requested --update, but $SPARK_ROOT/bin/spark-update.sh is missing."
+    exit $EXIT_INSTALL_FAILED
   fi
 
   header "SPARK Native Installer"

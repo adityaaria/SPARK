@@ -32,6 +32,18 @@ read_package_version() {
     grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$PACKAGE_JSON" | head -1 | grep -o '"[^"]*"$' | tr -d '"'
 }
 
+make_repo_copy() {
+    local destination="$1"
+    mkdir -p "$destination"
+    (
+        cd "$REPO_ROOT"
+        tar --exclude=.git -cf - .
+    ) | (
+        cd "$destination"
+        tar -xf -
+    )
+}
+
 # =============================================================================
 # Test 1: Skill frontmatter validation
 # =============================================================================
@@ -557,17 +569,19 @@ echo "Atomic update verification"
 
 upd_dir="$TEST_ROOT/update-test"
 upd_home="$TEST_ROOT/update-home"
+upd_repo="$TEST_ROOT/update-repo"
+make_repo_copy "$upd_repo"
 mkdir -p "$upd_dir/.claude" "$upd_home"
 
 # Install SPARK first
-cd "$upd_dir" && HOME="$upd_home" bash "$INSTALLER" --agent=claude-code --force >/dev/null 2>&1 || true
+cd "$upd_dir" && HOME="$upd_home" bash "$upd_repo/bin/spark-install.sh" --agent=claude-code --force >/dev/null 2>&1 || true
 
 # Modify lockfile to simulate an older version
 sed -i.bak 's/"version": "[^"]*"/"version": "6.0.0"/' "$upd_dir/.spark-lock.json" 2>/dev/null || true
 rm -f "$upd_dir/.spark-lock.json.bak" 2>/dev/null || true
 
 # Run updater with --yes
-upd_out="$(cd "$upd_dir" && HOME="$upd_home" bash "$SCRIPT_DIR/../../bin/spark-update.sh" --yes 2>&1 || true)"
+upd_out="$(cd "$upd_dir" && HOME="$upd_home" bash "$upd_repo/bin/spark-update.sh" --yes 2>&1 || true)"
 
 # Verify lockfile is updated to current version and skills exist
 current_version="$(read_package_version)"

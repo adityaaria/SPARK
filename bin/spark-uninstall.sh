@@ -178,6 +178,15 @@ get_target_dir() {
   fi
 }
 
+write_file_atomically() {
+  local target_path="$1"
+  local tmp_path
+  tmp_path="$(mktemp "${target_path}.tmp.XXXXXX")"
+
+  cat > "$tmp_path"
+  mv "$tmp_path" "$target_path"
+}
+
 # =============================================================================
 # Discovery & Selection
 # =============================================================================
@@ -222,7 +231,7 @@ discover_installed_agents() {
 
   # 3. Filter by --agent argument if specified
   if [ -n "$TARGET_AGENTS_ARG" ]; then
-    localIFS="$IFS"
+    local old_ifs="$IFS"
     IFS=','
     for arg in $TARGET_AGENTS_ARG; do
       arg="$(echo "$arg" | tr -d ' ')"
@@ -241,7 +250,7 @@ discover_installed_agents() {
         warn "Unknown agent specified in --agent: $arg"
       fi
     done
-    IFS="$localIFS"
+    IFS="$old_ifs"
   else
     for i in "${!AGENT_IDS[@]}"; do
       if [ "${detected[$i]}" = "true" ]; then
@@ -374,13 +383,40 @@ update_or_remove_lock_file() {
   else
     if ! $DRY_RUN; then
       info "Partial uninstall completed. Updating lock file..."
-      # If partial uninstall, we can clean up the lock file by re-running write or removing removed agent keys
-      # For simplicity and robustness without jq, if some agents remain, we remove the uninstalled agent lines
-      for rem in "${TO_REMOVE_AGENTS[@]}"; do
-        # Use grep -v or sed to clean up array in lockfile if needed
-        sed -i.bak "/\"$rem\"/d" "$lock_path" 2>/dev/null || true
-        rm -f "${lock_path}.bak" 2>/dev/null || true
-      done
+      if command -v node >/dev/null 2>&1; then
+        local tmp_path
+        tmp_path="$(mktemp)"
+        if node - "$lock_path" "${TO_REMOVE_AGENTS[@]}" >"$tmp_path" <<'EOF'
+const fs = require('fs');
+
+const [lockPath, ...removedAgents] = process.argv.slice(2);
+const raw = fs.readFileSync(lockPath, 'utf8');
+const lock = JSON.parse(raw);
+const removed = new Set(removedAgents);
+
+if (Array.isArray(lock.agents)) {
+  lock.agents = lock.agents.filter((agent) => !removed.has(agent));
+}
+
+if (lock.agents_map && typeof lock.agents_map === 'object') {
+  for (const agent of removed) {
+    delete lock.agents_map[agent];
+  }
+}
+
+process.stdout.write(`${JSON.stringify(lock, null, 2)}\n`);
+EOF
+        then
+          write_file_atomically "$lock_path" < "$tmp_path"
+        else
+          warn "Failed to rewrite partial lock file safely. Removing stale lock file instead."
+          rm -f "$lock_path"
+        fi
+        rm -f "$tmp_path"
+      else
+        warn "Node is unavailable; removing lock file instead of risking JSON corruption."
+        rm -f "$lock_path"
+      fi
     fi
   fi
 }

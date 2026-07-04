@@ -163,6 +163,70 @@ resolve_spark_root_and_version() {
   fi
 }
 
+run_with_timeout_capture() {
+  local timeout_secs="$1"
+  shift
+
+  local tmp_out
+  tmp_out="$(mktemp)"
+
+  "$@" >"$tmp_out" 2>/dev/null &
+  local cmd_pid=$!
+  local elapsed=0
+
+  while kill -0 "$cmd_pid" 2>/dev/null; do
+    if [ "$elapsed" -ge "$timeout_secs" ]; then
+      kill "$cmd_pid" 2>/dev/null || true
+      wait "$cmd_pid" 2>/dev/null || true
+      rm -f "$tmp_out"
+      return 124
+    fi
+
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  wait "$cmd_pid" 2>/dev/null || true
+  cat "$tmp_out"
+  rm -f "$tmp_out"
+}
+
+check_registry_version() {
+  if ! command -v npm >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local latest
+  latest="$(run_with_timeout_capture 5 npm show @adityaaria/spark version | tr -d '\r\n ' || echo "")"
+  if [ -n "$latest" ] && [ "$AVAILABLE_VERSION" != "$latest" ] && [ "$AVAILABLE_VERSION" != "unknown" ]; then
+    warn "Newer npm package available: $latest"
+    printf "    Run: npx @adityaaria/spark@latest update\n" >&2
+  fi
+}
+
+resolve_update_source() {
+  if command -v git >/dev/null 2>&1 && [ -d "$SPARK_ROOT/.git" ] && git -C "$SPARK_ROOT" remote get-url origin >/dev/null 2>&1; then
+    info "Refreshing git checkout before version comparison..."
+
+    if ! git -C "$SPARK_ROOT" fetch --quiet origin; then
+      error "Failed to fetch the latest SPARK refs from origin."
+      exit $EXIT_ERROR
+    fi
+
+    if ! git -C "$SPARK_ROOT" pull --ff-only --quiet; then
+      error "Unable to fast-forward the local SPARK checkout."
+      error "Resolve local changes or branch divergence, then rerun update."
+      exit $EXIT_ERROR
+    fi
+
+    resolve_spark_root_and_version
+    return 0
+  fi
+
+  check_registry_version
+  return 0
+}
+
 # =============================================================================
 # Main Update Logic
 # =============================================================================
@@ -212,12 +276,12 @@ main() {
   # Detect installed agents from lockfile
   local target_agents=()
   if [ -n "$TARGET_AGENTS_ARG" ]; then
-    localIFS="$IFS"
+    local old_ifs="$IFS"
     IFS=','
     for arg in $TARGET_AGENTS_ARG; do
       target_agents+=("$(echo "$arg" | tr -d ' ')")
     done
-    IFS="$localIFS"
+    IFS="$old_ifs"
   else
     for aid in "${AGENT_IDS[@]}"; do
       if grep -E "\"$aid\"[[:space:]]*:" "$lock_path" >/dev/null 2>&1 || grep -E "\"agents\"[[:space:]]*:[[:space:]]*\[[^]]*\"$aid\"" "$lock_path" >/dev/null 2>&1; then
@@ -230,6 +294,8 @@ main() {
     warn "No installed coding agents found in lockfile."
     exit $EXIT_NO_AGENTS
   fi
+
+  resolve_update_source
 
   echo ""
   info "Version Comparison:"
@@ -273,7 +339,7 @@ main() {
   if [ "$SCOPE" = "global" ]; then scope_flag="-g"; fi
 
   local agents_arg=""
-  localIFS="$IFS"; IFS=','; agents_arg="${target_agents[*]}"; IFS="$localIFS"
+  local old_ifs="$IFS"; IFS=','; agents_arg="${target_agents[*]}"; IFS="$old_ifs"
   agents_arg="${agents_arg// /,}"
 
   if $DRY_RUN; then
