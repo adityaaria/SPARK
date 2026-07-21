@@ -21,6 +21,7 @@ Before planning against an existing repository, check whether `.docs/` exists fo
 
 **Save plans to:** `docs/spark/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
+- **Not to be confused with `.docs/`:** `docs/spark/plans/` stores per-feature work plans. `.docs/` (built by `spark:project-scanner`) stores stable project memory (durable facts about the repo). These are separate folders with separate purposes — do not mix their contents.
 
 ## Scope Check
 

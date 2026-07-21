@@ -1,6 +1,6 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs
 ---
 
 # Verification Before Completion
@@ -9,7 +9,7 @@ description: Use when about to claim work is complete, fixed, or passing, before
 
 Claiming work is complete without verification is dishonesty, not efficiency.
 
-**Core principle:** Evidence before claims, always.
+**Core principle:** Evidence before claims, always. Run verification commands and confirm their output before making any success claim.
 
 **Violating the letter of this rule is violating the spirit of this rule.**
 

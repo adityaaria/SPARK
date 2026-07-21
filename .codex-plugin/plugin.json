@@ -1,6 +1,6 @@
 {
   "name": "spark",
-  "version": "6.0.3",
+  "version": "6.2.0",
   "description": "An agentic skills framework & software development methodology that works: planning, TDD, debugging, and collaboration workflows.",
   "author": {
     "name": "Aditya Aria",

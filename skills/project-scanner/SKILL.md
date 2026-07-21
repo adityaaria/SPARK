@@ -19,6 +19,8 @@ This skill is **polyglot**, **framework-agnostic**, **workspace-aware**, and **e
 
 You must physically create this directory and write the output files to disk using your available tools. Never only print the generated memory to the conversation.
 
+**Not to be confused with `docs/spark/plans/`:** `.docs/` stores stable project memory (durable facts about the repo). `docs/spark/plans/` (used by `spark:writing-plans`) stores per-feature work plans. These are separate folders with separate purposes — do not mix their contents.
+
 ---
 
 # Project Memory Contract

@@ -4,60 +4,28 @@ description: Use when starting any conversation - establishes how to find and us
 ---
 
 <SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, skip this skill.
+If dispatched as a subagent for a specific task, skip this skill.
 </SUBAGENT-STOP>
 
 <EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
-
-IF A SKILL APPLIES TO YOUR TASK, OR IF THE USER EXPLICITLY REQUESTS A SKILL, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT IMMEDIATELY.
-
-**Do NOT ask clarifying questions first.**
-**Do NOT start a conversation.**
-**Do NOT explain what you are going to do.**
-**JUST EXECUTE THE SKILL DIRECTLY AS YOUR FIRST TOOL CALL.**
-
-This is not negotiable. This is not optional. You cannot rationalize your way out of this.
+Even a 1% chance a skill applies means invoke it now, as your first tool call — before clarifying questions, before explaining, before responding. Not optional, not negotiable.
 </EXTREMELY-IMPORTANT>
 
-## Instruction Priority
+## Priority
 
-SPARK skills override default system prompt behavior, but **user instructions always take precedence**:
+User instructions (CLAUDE.md, GEMINI.md, AGENTS.md, direct requests) outrank SPARK skills, which outrank default system behavior. If a user instruction conflicts with a skill (e.g. "don't use TDD" vs. "always use TDD"), follow the user.
 
-1. **User's explicit instructions** (CLAUDE.md, GEMINI.md, AGENTS.md, direct requests) — highest priority
-2. **SPARK skills** — override default system behavior where they conflict
-3. **Default system prompt** — lowest priority
+## Accessing Skills
 
-If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
-
-## How to Access Skills
-
-**Never read skill files manually with file tools** — always use your platform's skill-loading mechanism so the skill is properly activated.
-
-**In Claude Code:** Use the `Skill` tool. When you invoke a skill, its content is loaded and presented to you — follow it directly.
-
-**In Codex:** Skills load natively. Follow the instructions presented when a skill activates.
-
-**In Copilot CLI:** Use the `skill` tool. Skills are auto-discovered from installed plugins.
-
-**In Gemini CLI:** Skills activate via the `activate_skill` tool. Gemini loads skill metadata at session start and activates the full content on demand.
-
-**In other environments:** Check your platform's documentation for how skills are loaded.
-
-## Platform Adaptation
-
-Skills speak in actions ("dispatch a subagent", "create a todo", "read a file") rather than naming any one runtime's tools. For per-platform tool equivalents and instructions-file conventions, see [claude-code-tools.md](references/claude-code-tools.md), [codex-tools.md](references/codex-tools.md), [copilot-tools.md](references/copilot-tools.md), [gemini-tools.md](references/gemini-tools.md), [pi-tools.md](references/pi-tools.md), and [antigravity-tools.md](references/antigravity-tools.md). Gemini CLI users get the tool mapping loaded automatically via GEMINI.md.
+Never read skill files manually — use your platform's loading mechanism so the skill activates properly: Claude Code's `Skill` tool, Codex's native loading, Copilot CLI's `skill` tool, Gemini CLI's `activate_skill`. Per-platform tool mapping: [claude-code-tools.md](references/claude-code-tools.md), [codex-tools.md](references/codex-tools.md), [copilot-tools.md](references/copilot-tools.md), [gemini-tools.md](references/gemini-tools.md), [pi-tools.md](references/pi-tools.md), [antigravity-tools.md](references/antigravity-tools.md).
 
 # Using Skills
 
-## The Rule
-
-**Invoke relevant or requested skills BEFORE any response or action.** Even a 1% chance a skill might apply means that you should invoke the skill to check. If an invoked skill turns out to be wrong for the situation, you don't need to use it.
-
-**CRITICAL:** If the user's prompt matches the purpose of ANY existing skill, or mentions a skill by name, you MUST invoke that skill IMMEDIATELY as your very first tool call. Do not answer conversationally. Do not ask for confirmation. Execute the skill first.
+Invoke relevant or requested skills BEFORE any response — even at 1% likelihood. Wrong guesses are fine to drop; missed checks are not. If the prompt matches a skill's purpose, or names one, invoke it immediately — no conversational answer first.
 
 ## Announcement Format
-When you invoke a skill, you MUST announce it to the developer using exactly this format as the very first thing you say:
+
+Announce every invocation as the first thing you say:
 `spark detection 💥 Using [skill] to [purpose]`
 
 ```dot
@@ -92,41 +60,28 @@ digraph skill_flow {
 
 ## Red Flags
 
-These thoughts mean STOP—you're rationalizing:
+These thoughts mean STOP — you're rationalizing:
 
 | Thought | Reality |
 |---------|---------|
 | "This is just a simple question" | Questions are tasks. Check for skills. |
 | "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
 | "This doesn't need a formal skill" | If a skill exists, use it. |
 | "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
 
 ## Skill Priority
 
-When multiple skills could apply, use this order:
+Process skills (brainstorming, systematic-debugging) go first — they determine HOW to approach the task. Implementation skills (frontend-design, mcp-builder) go second — they guide execution.
 
-1. **Process skills first** (brainstorming, systematic-debugging) - these determine HOW to approach the task
-2. **Implementation skills second** (frontend-design, mcp-builder) - these guide execution
-
-"Let's build X" → brainstorming first, then implementation skills.
-"Fix this bug" → systematic-debugging first, then domain-specific skills.
+"Let's build X" → brainstorming, then implementation skills.
+"Fix this bug" → if `.docs/` project memory exists, use bug-fix (meta-skill orchestrating context-grounding + systematic-debugging + TDD); otherwise, or if the task is too small for full orchestration, use systematic-debugging directly.
+"Add this feature" → if `.docs/` exists, use enhancement; otherwise use brainstorming directly.
+"Review/audit this code" → if `.docs/` exists and the request is a broader quality/architecture/security check, use audit; for a review of a specific diff or before merging, use requesting-code-review instead.
 
 ## Skill Types
 
-**Rigid** (TDD, systematic-debugging): Follow exactly. Don't adapt away discipline.
-
-**Flexible** (patterns): Adapt principles to context.
-
-The skill itself tells you which.
+Rigid skills (TDD, systematic-debugging): follow exactly, don't adapt away discipline. Flexible skills (patterns): adapt to context. The skill tells you which.
 
 ## User Instructions
 
-Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
+Instructions say WHAT, not HOW — "Add X" or "Fix Y" doesn't mean skip workflows.

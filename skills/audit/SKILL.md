@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Use to audit code quality, architecture, and security against the project's documented memory and proven repository conventions.
+description: Use when asked to review or audit code quality, architecture, or security in a project that has documented memory or established repository conventions to check against.
 ---
 
 # Audit (Meta-Skill)

@@ -1,6 +1,6 @@
 ---
 name: bug-fix
-description: Use to fix a bug while adhering strictly to the project's established standards and debugging protocols.
+description: Use when fixing a bug in a project that has established standards, debugging protocols, or documented project memory to ground the fix in.
 ---
 
 # Bug Fix (Meta-Skill)

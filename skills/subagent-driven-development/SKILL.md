@@ -67,6 +67,7 @@ digraph process {
     "Read plan, note context and global constraints, create todos" [shape=box];
     "More tasks remain?" [shape=diamond];
     "Dispatch final code reviewer subagent (../requesting-code-review/code-reviewer.md)" [shape=box];
+    "Use spark:verification-before-completion" [shape=box];
     "Use spark:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
     "Read plan, note context and global constraints, create todos" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -82,7 +83,8 @@ digraph process {
     "Mark task complete in todo list and progress ledger" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer subagent (../requesting-code-review/code-reviewer.md)" [label="no"];
-    "Dispatch final code reviewer subagent (../requesting-code-review/code-reviewer.md)" -> "Use spark:finishing-a-development-branch";
+    "Dispatch final code reviewer subagent (../requesting-code-review/code-reviewer.md)" -> "Use spark:verification-before-completion";
+    "Use spark:verification-before-completion" -> "Use spark:finishing-a-development-branch";
 }
 ```
 
@@ -413,6 +415,7 @@ Done!
 - **spark:using-git-worktrees** - Ensures isolated workspace (creates one or verifies existing)
 - **spark:writing-plans** - Creates the plan this skill executes
 - **spark:requesting-code-review** - Code review template for the final whole-branch review
+- **spark:verification-before-completion** - Verify evidence before claiming the branch is done
 - **spark:finishing-a-development-branch** - Complete development after all tasks
 
 **Subagents should use:**

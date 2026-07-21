@@ -35,7 +35,8 @@ For each task:
 
 ### Step 3: Complete Development
 
-After all tasks complete and verified:
+After all tasks complete:
+- **REQUIRED SUB-SKILL:** Use spark:verification-before-completion before claiming the plan is done — run verification commands and confirm their output.
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use spark:finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice
@@ -71,4 +72,5 @@ After all tasks complete and verified:
 **Required workflow skills:**
 - **spark:using-git-worktrees** - Ensures isolated workspace (creates one or verifies existing)
 - **spark:writing-plans** - Creates the plan this skill executes
+- **spark:verification-before-completion** - Verify evidence before claiming the plan is done
 - **spark:finishing-a-development-branch** - Complete development after all tasks

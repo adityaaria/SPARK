@@ -1,6 +1,6 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work into merge, PR, or cleanup
 ---
 
 # Finishing a Development Branch
@@ -17,14 +17,14 @@ Guide completion of development work by presenting clear options and handling ch
 
 ### Step 1: Verify Tests
 
-**Before presenting options, verify tests pass:**
+**REQUIRED SUB-SKILL:** Use spark:verification-before-completion before presenting options — it requires running verification commands and confirming their actual output before any completion claim, not just asserting tests pass.
 
 ```bash
 # Run project's test suite
 npm test / cargo test / pytest / go test ./...
 ```
 
-**If tests fail:**
+**If verification fails:**
 ```
 Tests failing (<N> failures). Must fix before completing:
 
@@ -35,7 +35,7 @@ Cannot proceed with merge/PR until tests pass.
 
 Stop. Don't proceed to Step 2.
 
-**If tests pass:** Continue to Step 2.
+**If verification passes:** Continue to Step 2.
 
 ### Step 2: Detect Environment
 

@@ -1,5 +1,20 @@
 # SPARK Release Notes
 
+## v6.2.0 (2026-07-21)
+
+Internal audit pass across skill descriptions, the `using-spark` bootstrap, and workflow routing. No file, folder, or `.docs/`/`docs/spark/plans/` contract changes — existing project memory and plans keep working as-is.
+
+### Visible Changes
+
+- **New required verification gate before completing work.** `executing-plans`, `subagent-driven-development`, `enhancement`, and `finishing-a-development-branch` now explicitly invoke `spark:verification-before-completion` before presenting merge/PR options or claiming a feature done. Previously this gate was only wired into `systematic-debugging`'s bug-fixing path — the other workflows relied on a thinner inline "verify tests pass" reminder. If you're used to those workflows completing the moment tests are green, expect one extra explicit verification step before the completion menu appears. Micro-tested under time pressure with no observed regression in either the old or new wording.
+
+### Not Visible to End Users
+
+- **Trimmed skill descriptions** (`brainstorming`, `finishing-a-development-branch`, `using-git-worktrees`, `audit`, `bug-fix`, `enhancement`, `verification-before-completion`) to trigger-only conditions, per the project's own Skill Discovery Optimization guidance — no workflow summaries left in any `description` field. Affects skill discovery only, not stored output.
+- **`using-spark/SKILL.md` cut from 943 to ~600 words** (frequently-loaded bootstrap) while keeping the flowchart, red flags, and routing rules intact. Micro-tested against the original wording under a casual "just a quick look" pressure scenario — both versions triggered skill invocation identically across all reps.
+- **Added routing disambiguation** for `using-spark`'s "Skill Priority" section: `bug-fix` vs `systematic-debugging`, `enhancement` vs `brainstorming`, and `audit` vs `requesting-code-review`, all keyed on whether `.docs/` project memory exists.
+- **Cross-referenced the two `docs` folders.** `project-scanner` and `writing-plans` now each note the difference between `.docs/` (stable project memory) and `docs/spark/plans/` (per-feature plans) — no renames, no path changes.
+
 ## v6.0.3 (2026-06-18)
 
 ### Subagent-Driven Development

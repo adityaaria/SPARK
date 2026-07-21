@@ -1,6 +1,6 @@
 ---
 name: enhancement
-description: Use to build a new feature or enhancement by aligning strictly with the project's existing business flow and domain architecture.
+description: Use when building a new feature or enhancement in a project that has an existing business flow and domain architecture to align with.
 ---
 
 # Enhancement (Meta-Skill)
@@ -26,3 +26,4 @@ You MUST execute this checklist strictly in order. Do not skip steps.
 ### Phase 3: Execution
 - `[ ]` **Step 5:** Invoke the `executing-plans` skill to write the code.
 - `[ ]` *(Optional)*: If the enhancement is massive (e.g., touching frontend UI, backend API, and database migrations simultaneously), invoke `dispatching-parallel-agents` to delegate the sub-tasks to specialized subagents.
+- `[ ]` **Step 6:** Invoke the `verification-before-completion` skill before considering the enhancement done — run verification commands and confirm their output before claiming completion.
