@@ -260,6 +260,13 @@ a ledger file, not only in todos.
   `cat "$(git rev-parse --show-toplevel)/.spark/sdd/progress.md"`. Tasks listed there
   as complete are DONE — do not re-dispatch them; resume at the first task
   not marked complete.
+- If the ledger does not exist yet, create it and write `Plan: <path to the
+  plan file, relative to repo root>` as its first line before any task
+  entries. This lets tooling (e.g. a dashboard) match a ledger to the exact
+  plan it tracks instead of guessing from task numbers alone. Purely
+  informational — nothing else about how the ledger is read or written
+  changes. Ledgers created before this convention existed simply lack the
+  line; treat its absence as unknown-plan, never as an error.
 - When a task's review comes back clean, append one line to the ledger in
   the same message as your other bookkeeping:
   `Task N: complete (commits <base7>..<head7>, review clean)`.

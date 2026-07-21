@@ -1,5 +1,75 @@
 # SPARK Release Notes
 
+## v6.3.0 (2026-07-21)
+
+### New: Knowledge Rules
+
+A new prescriptive layer for explicit coding-standard rules, sitting alongside (not inside) `.docs/`.
+
+- **New skill `knowledge-rules`** builds and maintains `docs/spark/rules/KNOWLEDGE_RULES.md` — a `RULE-xxx` formatted file of `Must`/`Should` rules, either auto-detected from consistent, evidenced patterns in the repo (confirmed with you before anything is written) or added manually in plain language ("no `watch`", "no `any` type", "no hardcoded values"). Refreshing this file can only add/update auto-detected entries — it will never delete or overwrite a manual one.
+- **Hybrid enforcement**: when a rule has a native equivalent in the project's existing linter (ESLint, Ruff, RuboCop, etc.), the skill offers to wire it in as `Enforced-Via: linter:<tool>:<rule-id>` so CI catches it too — always with an explicit per-change confirmation before touching any linter config file. Rules without a mechanical equivalent stay `agent-review` and are just as fully enforced.
+- **`audit`, `bug-fix`, and `enhancement`** now read `KNOWLEDGE_RULES.md` in their Context Grounding phase, alongside `.docs/` — `Must` rules are hard constraints, `Should` rules are strong preferences, both flagged with the rule's own Rationale and Fix Guidance text.
+- **Dashboard `/api/tree` no longer guesses anti-patterns from folder names.** The old hardcoded `controller`/`utils`/`helper`/`api` name-matching (a source of false positives — a well-designed `AuthController/` was flagged purely for its name) is gone. It now matches against your actual Knowledge Rules' `Detection` patterns, on both file names and small file contents, and reports the rule's real Rationale/Fix Guidance as the reason. If you haven't set up any Knowledge Rules yet, the dashboard shows no anti-patterns at all — a `rulesConfigured: false` flag — rather than a guess that might be wrong.
+- **New dashboard tab, "Rules"**, backed by new `GET/POST/DELETE /api/rules` endpoints: view all rules with severity/source/enforcement badges, add a manual rule through a form, and delete manual rules (deleting an auto-detected rule is blocked — re-run `knowledge-rules` to refresh those instead).
+
+### New: Plans & Progress Dashboard
+
+A new dashboard tab surfaces `writing-plans` plans and `subagent-driven-development` progress without needing a terminal.
+
+- **New endpoints `GET /api/plans` and `GET /api/plans/:filename`** list every plan in `docs/spark/plans/` (title, date, feature name, task count) and return one plan's parsed `Task N:` list. An empty or missing `docs/spark/plans/` returns `{ plans: [] }`, not an error — most projects haven't run `writing-plans` yet.
+- **New endpoint `GET /api/progress`** reads `.spark/sdd/progress.md` and parses its `Task N: complete (...)` lines; any line that doesn't match that shape is still returned verbatim (`{ raw }`) so nothing is silently dropped, and the full raw ledger is always included as a fallback.
+- **New dashboard tab, "Plans & Progress"**: pick a plan on the left, see its tasks with ✅/⬜ status on the right, plus the raw active-session ledger alongside it.
+- **`subagent-driven-development`'s ledger now records which plan it tracks.** A new ledger writes `Plan: <path>` as its first line. The dashboard uses this to correlate a ledger to the exact plan it belongs to — confident status when it matches the open plan, "no active session for this plan" when it names a *different* plan (so a stale ledger from another feature can't paint the wrong plan's tasks as done), and the original number-only guess (with a disclaimer) when an older ledger has no `Plan:` line at all.
+
+### Fixed: Architecture Graph Rendering
+
+The "🕸 Architecture Graph" dashboard tab now renders with real Mermaid.js instead of a hand-rolled regex parser.
+
+- **Subgraphs render as clusters again.** The old parser discarded every `subgraph`/`end` line outright, flattening any intentional grouping `project-scanner` put in `ARCHITECTURE_GRAPH.md` (e.g. infrastructure or workspace boundaries) into one flat graph. Mermaid.js handles subgraphs, and any other Mermaid diagram type, natively.
+- **Trade-off:** rendering is now a static SVG laid out by Mermaid, not a physics-based graph you can drag nodes around in. Pan/zoom is preserved via `svg-pan-zoom`.
+- Multiple `mermaid` blocks across `.docs/*.md` each render into their own labeled card; a per-diagram parse failure shows an error for just that diagram, not the whole tab; results are cached for the session so switching tabs doesn't re-render.
+- `vis-network` is no longer loaded — it was only ever used by this one function.
+
+### New: Automatic Project Memory Refresh
+
+Two new layers keep `.docs/` from going stale, plus an optional CI template for a scheduled safety net in your own project's repo.
+
+- **`project-scanner` gains Delta Scan Mode** — a lighter refresh, used by automated callers (not by a developer directly asking for a scan), that re-verifies only the `.docs/*.md` claims whose Evidence touches files changed since the last scan, leaving the rest of each file untouched. A touched file's `Last Scanned` bumps to today even if only one claim in it changed; an untouched file's date is left alone, so staleness views stay honest about what was actually re-verified.
+- **`audit`, `bug-fix`, and `enhancement` gain a staleness gate.** During Context Grounding, if `.docs/PROJECT_SCAN.md`'s `Last Scanned` is more than 20 commits or 30 days old, the skill runs a Delta Scan before continuing, announced in one line, without waiting for confirmation (it's a memory read+update, not a code change). Projects with fresh memory see no behavior change. *(The 20-commit / 30-day threshold is intentionally identical to the new Memory Health dashboard's staleness badge below — change one, change both.)*
+- **New doc, [docs/auto-refresh-project-memory.md](docs/auto-refresh-project-memory.md)**, includes a copy-paste GitHub Actions template for projects that want a scheduled Delta Scan even when nobody's actively using SPARK — opens a PR for review, never commits directly, and is not itself part of SPARK (install it in your own project's repo, not this one).
+
+### New: Memory Health Dashboard
+
+A new tab aggregates what's otherwise only visible by reading through `.docs/*.md` by hand.
+
+- **New endpoint `GET /api/memory-health`** reads every `.docs/*.md` file and extracts, tolerantly (project-scanner's contract fixes field *names*, not exact formatting): the `Last Scanned` date, a count of each of the 7 Confidence labels found, and the bullets under a `Gaps / Unknowns` heading. Per-file score is `Confirmed from Code` count ÷ total confidence labels found; a file with no recognizable confidence labels gets `insufficientData: true` instead of a misleading score. `commitsSinceLastScan` comes from `git rev-list`, gracefully `null` outside a git repo. No `.docs/` → `{ files: [], overallScore: null, totalGaps: 0 }`, not an error.
+- **New dashboard tab, "Memory Health"**: overall score badge (green/yellow/red), a per-file table with a Last Scanned/commits-since/confidence-distribution/score row each — flagged with a re-scan badge past the same 20-commit / 30-day threshold as the staleness gate above — and an aggregated, read-only list of every `Gaps / Unknowns` bullet across all files, grouped by source file.
+- **Known limitation, by design:** this is a text heuristic over a field contract that only fixes names, not exact formatting — scores are estimates, not precise measurements, and can be misleading in edge cases (e.g. a legitimately `Not Applicable` file scores the same as a low-confidence one, since the formula only rewards `Confirmed from Code`).
+
+### Changed: API Exporter Output Format
+
+The "API Exporter" tab's Postman collection export now matches a real-world collection shape (auth + saved examples) instead of a generic guess.
+
+- **Positive/Negative examples now live as saved responses on one request**, not as three separate sub-requests (200/400/401) in a folder. Each exported endpoint is a single item with `response: [Positive, Negative]` attached — matching how Postman's own "Save as Example" feature structures a collection.
+- **New "Request Config" panel** lets you set an Auth type (None / Basic / Bearer) and free-form custom headers (one per line, `Header-Name: value`) before exporting — applied to every request in the collection. Nothing is hardcoded to a specific API's auth scheme or header set.
+- **Negative example body changed** to `{ "code": 401, "message": "..." }`, replacing the previous `{ success: false, error: {...} }` shape.
+- **Item names are now descriptive** (e.g. "Get Gold Deposit List" for `GET /gold-deposit/list`), derived from the method and path, instead of the literal `METHOD /path` string.
+- A `variable` array is now included at the collection level (`baseUrl`, plus `token` when Bearer auth is selected).
+- **Follow-up: mock data and auth now come from `.docs/API_CONTRACT.md` itself, not path-keyword guessing.** Endpoints are parsed as structured groups (Purpose, Authentication/Authorization, Request/Response DTO, Error Responses — same tolerant text-heuristic approach as Memory Health, since project-scanner fixes field names, not exact formatting). Mock values are generated per DTO field from its own name/type (`namaNasabah` → a name, `nilaiTitipan` → a currency string, `tanggalPengajuan` → a date) — field names are never renamed or translated. An endpoint with an undocumented DTO gets an honest `{ "note": "... tidak terdokumentasi ..." }` instead of a misleadingly specific fake value.
+- **Auth and custom headers are now derived per-endpoint from documented Authentication/Authorization text** (Basic/Bearer detected from wording, custom headers like `x-branch-id` become Postman variables like `{{branchId}}` — never hardcoded values). The Request Config panel from the previous change becomes the fallback for endpoints with no documented auth, rather than a blanket override.
+- **Multiple documented error codes now produce multiple response entries** (e.g. "Negative - Unauthorized (401)" and "Negative - Not Found (404)" as separate saved examples), instead of collapsing to one generic "Negative". An endpoint with zero documented errors exports with only a "Positive" example — no invented error response.
+- A disclaimer now sits above the endpoint list in the API Exporter tab, explaining that mock quality depends on how complete `.docs/API_CONTRACT.md` is.
+
+### Changed: Dashboard Reskin — Kanban Wall, Whiteboard, Security Gate
+
+Pure visual/label reskin of three existing tabs into a "workspace" metaphor. No new data sources, no endpoint changes, no character/isometric illustration — flat cards and outline-style badges, consistent with the dashboard's existing dark/bordered look.
+
+- **"Plans & Progress" is now "Kanban wall"**, and its task list is now a 3-column board (Belum dikerjakan / Sedang berjalan / Selesai) instead of a flat list. The middle column is always empty with an honest note — the ledger format has no explicit "in progress" state, so nothing is invented for it. Same plan↔ledger correlation logic as before (exact match, known-other-plan, or number-only fallback with disclaimer) — only the layout changed.
+- **"Architecture Graph" is now "Whiteboard"**, same Mermaid rendering as before. When Memory Health data exists for `ARCHITECTURE_GRAPH.md`, a small badge shows its dominant Confidence label ("Confirmed" in green, "Perlu ditinjau" in amber for Unverified Pattern/Insufficient Evidence). No badge at all — not a guessed one — when Memory Health has no data for that file, or its dominant label doesn't map to a clear good/bad signal.
+- **New "Security gate" badge**, always visible in the header regardless of tab: counts tasks in the actively-tracked plan not yet marked complete in `.spark/sdd/progress.md` (`N pending`, amber; "Semua bersih", green, at zero). No active session shows a distinct neutral "Tidak ada sesi aktif" — deliberately not the same as `0 pending`, since those are different facts.
+
+No changes to the `.docs/` 10-file contract, `project-scanner`'s default full-scan behavior or legacy-trap handling (still conversational, never persisted), the `docs/spark/plans/` naming convention, the core `Task N: complete (...)` ledger line format, or any existing dashboard endpoint's response shape (including `/api/docs`, refactored internally to share its file-reading with `/api/memory-health` but otherwise unchanged).
+
 ## v6.2.0 (2026-07-21)
 
 Internal audit pass across skill descriptions, the `using-spark` bootstrap, and workflow routing. No file, folder, or `.docs/`/`docs/spark/plans/` contract changes — existing project memory and plans keep working as-is.

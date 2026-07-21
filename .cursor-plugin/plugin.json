@@ -2,7 +2,7 @@
   "name": "spark",
   "displayName": "SPARK",
   "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques",
-  "version": "6.2.0",
+  "version": "6.3.0",
   "author": {
     "name": "Aditya Aria",
     "email": "adityaaria20@gmail.com"

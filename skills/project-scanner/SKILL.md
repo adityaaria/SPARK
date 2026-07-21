@@ -270,6 +270,23 @@ On every scan for a valid project root:
 
 If the agent cannot safely reconcile `.docs/` because of filesystem problems or conflicting developer instructions, it must say so explicitly in the final response.
 
+This is the default mode. See **Delta Scan Mode** below for the lighter-weight alternative used by automated callers.
+
+---
+
+# Delta Scan Mode
+
+A lighter-weight refresh for when this skill is invoked by another skill or by CI with an explicit "delta scan" or "quick refresh" context — not the default, and not what runs when a developer directly asks for a scan. Direct developer requests always get the full scan above.
+
+1. Read the `Last Scanned` date from `.docs/PROJECT_SCAN.md`. If the 10 files disagree, use the oldest date (most conservative).
+2. Find the nearest commit to that date: `git rev-list -1 --before="<date>" HEAD`.
+3. List what changed since: `git diff --name-only <that-commit>..HEAD`.
+4. For each `.docs/*.md` file, re-analyze and update only the claims whose Evidence references one of the changed files. Leave the rest of that file untouched.
+5. **Update `Last Scanned` at the file level, not per-claim — this is binding, not a style choice.** The Memory Health view reads one `Last Scanned` date per file as the single source of truth for staleness. If the delta scan touches even one claim in a file, bump that file's `Last Scanned` to today, even though only part of it was actually re-verified. If the delta scan touches nothing in a file (no changed file's evidence lands there), leave its date untouched — that honestly reflects it wasn't re-verified, and lets staleness views correctly show it as older than a file that was just touched.
+6. A new file that doesn't fit any existing pattern (not a modification of something already tracked) goes under **Gaps / Unknowns** as "not verified in delta scan — needs a full scan," rather than forcing full analysis of it here.
+
+Delta scan changes analysis *scope* only — every Evidence Requirements, Confidence Engine, and Duplicate Prevention rule above still applies in full, and the 10-file contract is unchanged; only some files' contents are updated.
+
 ---
 
 # Project Discovery Strategy

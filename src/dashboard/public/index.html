@@ -8,9 +8,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Vis-Network for Interactive Graphs -->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Mermaid.js for Architecture Graph rendering -->
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      window.mermaid = mermaid;
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+          background: '#0d0d0d',
+          primaryColor: '#151515',
+          primaryBorderColor: '#2a2a2a',
+          primaryTextColor: '#f4f4f4',
+          lineColor: '#2a2a2a'
+        },
+        securityLevel: 'strict'
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/svg-pan-zoom/3.6.1/svg-pan-zoom.min.js"></script>
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -210,8 +226,83 @@
         }
         .btn-accent:hover { background: var(--accent-dark); }
 
+        /* Rule badges */
+        .badge { font-size: 10px; padding: 4px 8px; border-radius: 20px; border: 1px solid var(--glass-border); white-space: nowrap; }
+        .badge-must { color: var(--danger); border-color: var(--danger); }
+        .badge-should { color: var(--warning); border-color: var(--warning); }
+        .badge-auto { color: var(--text-muted); }
+        .badge-manual { color: var(--accent); border-color: var(--accent); }
+        .badge-enforced { color: var(--text-muted); }
+
+        .rule-card {
+            background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 8px;
+            padding: 16px; margin-bottom: 12px;
+        }
+        .rule-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+        .rule-card-title { font-size: 14px; color: var(--text-main); font-family: var(--font-mono); }
+        .rule-card-badges { display: flex; gap: 6px; flex-shrink: 0; }
+        .rule-card-rationale { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+        /* Plans & Progress */
+        .badge-done { color: var(--accent); border-color: var(--accent); }
+        .badge-pending { color: var(--text-muted); }
+        .plan-item {
+            padding: 14px 16px; border: 1px solid var(--glass-border); border-radius: 8px;
+            margin-bottom: 10px; cursor: pointer; transition: 0.2s;
+        }
+        .plan-item:hover, .plan-item.active { border-color: var(--accent); background: rgba(255,255,255,0.03); }
+        .plan-item-title { font-size: 14px; color: var(--text-main); margin-bottom: 6px; }
+        .plan-item-meta { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+        .task-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; border-bottom: 1px solid var(--glass-border); font-size: 13px;
+        }
+
+        /* Kanban Wall */
+        .kanban-board { display: flex; gap: 16px; align-items: flex-start; }
+        .kanban-col { flex: 1; min-width: 0; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; }
+        .kanban-col-title { display: flex; justify-content: space-between; align-items: center; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px; }
+        .kanban-count { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--glass-border); border-radius: 20px; padding: 2px 8px; }
+        .kanban-card {
+            display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; margin-bottom: 8px;
+            background: var(--panel-bg); border: 1px solid var(--glass-border); border-radius: 8px; font-size: 13px;
+        }
+        .kanban-card-badge { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+        .kanban-empty { font-size: 12px; color: var(--text-muted); padding: 8px 0; }
+        .disclaimer { font-size: 12px; color: var(--warning); padding: 10px 14px; background: rgba(255,184,108,0.08); border-radius: 8px; margin-bottom: 16px; }
+
+        /* Memory Health */
+        .score-badge { font-family: var(--font-mono); font-size: 42px; font-weight: 300; }
+        .score-good { color: var(--accent); }
+        .score-mid { color: var(--warning); }
+        .score-bad { color: var(--danger); }
+        .health-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .health-table th { text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; border-bottom: 1px solid var(--glass-border); }
+        .health-table td { padding: 10px 12px; border-bottom: 1px solid var(--glass-border); vertical-align: middle; }
+        .confidence-bar { display: flex; height: 8px; width: 140px; border-radius: 4px; overflow: hidden; background: #000; }
+        .confidence-bar span { display: block; height: 100%; }
+        .stale-badge { font-size: 10px; padding: 3px 8px; border-radius: 20px; border: 1px solid var(--warning); color: var(--warning); white-space: nowrap; }
+
+        /* Whiteboard confidence badge */
+        .confidence-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--glass-border); white-space: nowrap; }
+        .confidence-badge.confirmed { color: var(--accent); border-color: var(--accent); }
+        .confidence-badge.review { color: var(--warning); border-color: var(--warning); }
+
+        /* Security Gate */
+        .security-gate-badge { font-size: 12px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border); }
+        .security-gate-badge.clean { color: var(--accent); border-color: var(--accent); }
+        .security-gate-badge.pending { color: var(--warning); border-color: var(--warning); }
+        .security-gate-badge.neutral { color: var(--text-muted); }
+        .gap-group { margin-bottom: 16px; }
+        .gap-group-title { font-size: 13px; color: var(--text-main); font-family: var(--font-mono); margin-bottom: 8px; }
+        .gap-item { font-size: 12px; color: var(--text-muted); padding: 4px 0 4px 16px; }
+
         /* Graph & Tree */
-        #network-graph { width: 100%; height: 500px; border: 1px solid var(--glass-border); border-radius: 12px; background: #0d0d0d; }
+        #network-graph { width: 100%; }
+        .graph-card { border: 1px solid var(--glass-border); border-radius: 12px; background: #0d0d0d; margin-bottom: 24px; overflow: hidden; }
+        .graph-card-label { padding: 12px 20px; border-bottom: 1px solid var(--glass-border); color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
+        .graph-card-body { width: 100%; height: 500px; }
+        .graph-card-body svg { width: 100%; height: 100%; }
         .tree-node { padding: 6px 0; margin-left: 24px; cursor: pointer; color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; }
         .tree-node:hover { color: var(--text-main); }
         .tree-node.danger { color: var(--danger); }
@@ -233,12 +324,15 @@
             <div class="nav-title">Views</div>
             <div class="nav-item active" onclick="switchView('overview')">📄 Overview</div>
             <div class="nav-item" onclick="switchView('heatmap')">🔥 Heatmap</div>
-            <div class="nav-item" onclick="switchView('graph')">🕸 Architecture Graph</div>
+            <div class="nav-item" onclick="switchView('graph')">🖊️ Whiteboard</div>
+            <div class="nav-item" onclick="switchView('memory-health')">🩺 Memory Health</div>
         </div>
 
         <div class="nav-section">
             <div class="nav-title">Tools</div>
             <div class="nav-item" onclick="switchView('studio')">✍️ Skill Studio</div>
+            <div class="nav-item" onclick="switchView('rules')">📏 Rules</div>
+            <div class="nav-item" onclick="switchView('plans')">📋 Kanban wall</div>
             <div class="nav-item" onclick="switchView('exporter')">🚀 API Exporter</div>
             <div class="nav-item" onclick="switchView('guide')">📚 Guide & Commands</div>
         </div>
@@ -255,7 +349,10 @@
                 <h1 id="page-title">Dashboard Overview</h1>
                 <div style="font-family: var(--font-mono); color: var(--text-muted); font-size: 12px; margin-top: 8px;" id="current-time">11:37 AM Time</div>
             </div>
-            <div class="status-badge" id="agent-status">Checking Agents...</div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span id="security-gate-badge"></span>
+                <div class="status-badge" id="agent-status">Checking Agents...</div>
+            </div>
         </div>
 
         <!-- View: Overview (Markdown reader) -->
@@ -316,8 +413,13 @@
 
         <!-- View: Graph -->
         <div id="view-graph" class="panel hidden">
-            <h2>Interactive Architecture Graph</h2>
-            <p>Visualizing relationships between system components.</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h2>Whiteboard</h2>
+                    <p>Visualizing relationships between system components.</p>
+                </div>
+                <span id="whiteboard-confidence-badge"></span>
+            </div>
             <div id="network-graph"></div>
         </div>
 
@@ -351,6 +453,87 @@
             </div>
         </div>
 
+        <!-- View: Rules -->
+        <div id="view-rules" class="panel hidden" style="display: flex; gap: 40px;">
+            <div style="flex: 1; overflow-y: auto;">
+                <h2>Knowledge Rules</h2>
+                <p>Explicit coding-standard rules, read by <code>audit</code> / <code>bug-fix</code> / <code>enhancement</code>. Auto-detected rules come from the <code>knowledge-rules</code> skill; manual rules can be added here.</p>
+                <div id="rules-empty-state" class="hidden" style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
+                    Belum ada Knowledge Rules — jalankan skill <code>knowledge-rules</code> atau tambah rule manual di panel sebelah.
+                </div>
+                <div id="rules-list"><p style="color: var(--text-muted); font-size: 13px;">Loading...</p></div>
+            </div>
+            <div style="width: 340px; flex-shrink: 0;">
+                <h3 style="font-size: 14px; font-weight: 400; margin-bottom: 20px;">Add Manual Rule</h3>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="rule-title" placeholder="e.g. No `any` type">
+                </div>
+                <div class="form-group">
+                    <label>Severity</label>
+                    <input type="text" id="rule-severity" placeholder="Must or Should" value="Must">
+                </div>
+                <div class="form-group">
+                    <label>Rationale</label>
+                    <textarea id="rule-rationale" placeholder="Why this rule holds" style="min-height: 80px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Detection (optional keyword/regex)</label>
+                    <input type="text" id="rule-detection" placeholder="e.g. \\bany\\b">
+                </div>
+                <div class="form-group">
+                    <label>Fix Guidance</label>
+                    <textarea id="rule-fix" placeholder="How to fix a violation" style="min-height: 80px;"></textarea>
+                </div>
+                <button class="btn btn-accent" onclick="addRule()">Add Rule</button>
+                <p id="rule-msg" style="margin-top: 16px; color: var(--text-muted); font-size: 13px;"></p>
+            </div>
+        </div>
+
+        <!-- View: Plans & Progress -->
+        <div id="view-plans" class="panel hidden" style="display: flex; gap: 40px;">
+            <div style="width: 340px; flex-shrink: 0;">
+                <h2>Plans</h2>
+                <p>From <code>docs/spark/plans/</code>, written by <code>writing-plans</code>.</p>
+                <div id="plans-list"><p style="color: var(--text-muted); font-size: 13px;">Loading...</p></div>
+            </div>
+            <div style="flex: 1; overflow-y: auto;">
+                <div id="plan-detail">
+                    <p style="color: var(--text-muted); font-size: 13px;">Select a plan on the left to see its tasks.</p>
+                </div>
+                <div id="ledger-panel" style="margin-top: 32px;"></div>
+            </div>
+        </div>
+
+        <!-- View: Memory Health -->
+        <div id="view-memory-health" class="panel hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                <div>
+                    <h2>Memory Health</h2>
+                    <p>Aggregated Last Scanned / Confidence / Gaps across <code>.docs/</code> — a text heuristic, not a precise measurement.</p>
+                </div>
+                <div style="text-align: right;">
+                    <div class="score-badge" id="mh-overall-score">--</div>
+                    <div style="font-size: 12px; color: var(--text-muted);" id="mh-total-gaps">-- gaps</div>
+                </div>
+            </div>
+            <div id="mh-empty-state" class="hidden" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                Belum ada project memory — jalankan skill <code>project-scanner</code>.
+            </div>
+            <div id="mh-content">
+                <div style="overflow-x: auto; margin-bottom: 32px;">
+                    <table class="health-table" id="mh-table">
+                        <thead>
+                            <tr><th>File</th><th>Last Scanned</th><th>Commits Since</th><th>Confidence</th><th>Score</th></tr>
+                        </thead>
+                        <tbody id="mh-table-body"></tbody>
+                    </table>
+                </div>
+                <h3 style="font-size: 14px; font-weight: 400; margin-bottom: 16px;">Gaps / Unknowns</h3>
+                <div id="mh-gaps-list"></div>
+            </div>
+        </div>
+
         <!-- View: Guide -->
         <div id="view-guide" class="panel hidden markdown-body">
             <h2>Loading Documentation...</h2>
@@ -366,6 +549,34 @@
                 <div style="display: flex; gap: 12px;">
                     <button class="btn" onclick="exportEnv()">.env</button>
                     <button class="btn btn-accent" onclick="exportPostman()">Export Collection</button>
+                </div>
+            </div>
+            <div class="disclaimer" style="margin-top: -12px;">
+                Mock data dihasilkan dari Request/Response DTO dan Error Responses yang terdokumentasi di <code>.docs/API_CONTRACT.md</code>. Endpoint yang field DTO-nya belum lengkap terdokumentasi akan menghasilkan mock seadanya — jalankan <code>project-scanner</code> ulang atau lengkapi dokumentasi <code>API_CONTRACT.md</code> untuk hasil yang lebih akurat.
+            </div>
+            <div style="background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                <h3 style="font-size: 14px; font-weight: 400; margin-bottom: 16px;">Request Config <span style="color: var(--text-muted); font-weight: 300;">— applied to every exported request</span></h3>
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Auth Type</label>
+                        <select id="exp-auth-type" onchange="toggleExporterAuthFields()" style="width: 100%; padding: 14px; border-radius: 8px; background: #0d0d0d; border: 1px solid var(--glass-border); color: var(--text-main); font-family: var(--font-mono); font-size: 14px;">
+                            <option value="none">None</option>
+                            <option value="basic">Basic Auth</option>
+                            <option value="bearer">Bearer Token</option>
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="exp-auth-basic-fields" style="flex: 2; display: flex; gap: 12px;">
+                        <div style="flex: 1;"><label>Username</label><input type="text" id="exp-auth-username" placeholder="admin"></div>
+                        <div style="flex: 1;"><label>Password</label><input type="text" id="exp-auth-password" placeholder="{{password}}"></div>
+                    </div>
+                    <div class="form-group hidden" id="exp-auth-bearer-fields" style="flex: 2;">
+                        <label>Bearer Token</label>
+                        <input type="text" id="exp-auth-token" placeholder="{{token}}">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 4px;">
+                    <label>Custom Headers <span style="color: var(--text-muted);">— one per line, "Header-Name: value"</span></label>
+                    <textarea id="exp-custom-headers" placeholder="Accept-Version: 1.0.0&#10;x-branch-id: 60139&#10;x-client-id: 9911" style="min-height: 100px;"></textarea>
                 </div>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 16px 20px; background: var(--bg-color); border: 1px solid var(--glass-border); border-radius: 12px;">
@@ -385,14 +596,15 @@
     <script>
         let docsData = [];
         let treeData = [];
-        let networkInstance = null;
         let chartInstance = null;
+        let graphsRendered = false;
+        let renderedGraphsCache = null; // cached HTML for the graph container, keyed by docsData identity
 
         function switchView(viewName) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             event.currentTarget.classList.add('active');
 
-            ['overview', 'heatmap', 'graph', 'studio', 'guide', 'exporter'].forEach(v => {
+            ['overview', 'heatmap', 'graph', 'studio', 'rules', 'plans', 'memory-health', 'guide', 'exporter'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.add('hidden');
             });
             document.getElementById(`view-${viewName}`).classList.remove('hidden');
@@ -400,17 +612,23 @@
             const titles = {
                 overview: 'Dashboard Overview',
                 heatmap: 'Codebase Heatmap',
-                graph: 'Architecture Graph',
+                graph: 'Whiteboard',
                 studio: 'Skill Studio',
+                rules: 'Knowledge Rules',
+                plans: 'Kanban wall',
+                'memory-health': 'Memory Health',
                 guide: 'Documentation & Guide',
                 exporter: 'API Exporter'
             };
             document.getElementById('page-title').innerText = titles[viewName];
 
-            if (viewName === 'graph') renderGraph();
+            if (viewName === 'graph') { renderGraph(); updateWhiteboardBadge(); }
             if (viewName === 'heatmap') fetchTree();
             if (viewName === 'guide') fetchReadme();
             if (viewName === 'studio') fetchSkills();
+            if (viewName === 'rules') fetchRules();
+            if (viewName === 'plans') fetchPlans();
+            if (viewName === 'memory-health') fetchMemoryHealth();
             if (viewName === 'exporter') extractEndpoints();
         }
 
@@ -474,9 +692,10 @@
                 const res = await fetch('/api/tree');
                 const data = await res.json();
                 treeData = data.tree;
-                
-                // Naive simulation of finding legacy traps
-                const dangerousFiles = ['controller', 'utils', 'helper', 'api']; 
+
+                // isDanger/dangerReason come straight from the backend, which
+                // derives them from docs/spark/rules/KNOWLEDGE_RULES.md — no
+                // name-based guessing here.
                 let totalFiles = 0;
                 let dangerFilesCount = 0;
                 let dangerListHTML = '';
@@ -484,8 +703,8 @@
                 function buildTreeHtml(nodes) {
                     let html = '';
                     for(const node of nodes) {
-                        const isDanger = node.type === 'file' && dangerousFiles.some(d => node.name.toLowerCase().includes(d));
-                        
+                        const isDanger = !!node.isDanger;
+
                         if (node.type === 'file') {
                             totalFiles++;
                             if (isDanger) {
@@ -508,19 +727,21 @@
                     }
                     return html;
                 }
-                
+
                 document.getElementById('file-tree').innerHTML = buildTreeHtml(treeData);
-                
+
                 // Update Widgets
                 const cleanFilesCount = totalFiles - dangerFilesCount;
                 const healthScore = totalFiles === 0 ? 100 : Math.round((cleanFilesCount / totalFiles) * 100);
-                
+
                 document.getElementById('stat-total').innerText = totalFiles;
                 document.getElementById('stat-clean').innerText = cleanFilesCount;
                 document.getElementById('stat-danger').innerText = dangerFilesCount;
                 document.getElementById('health-score').innerText = healthScore;
-                
-                if (dangerListHTML === '') {
+
+                if (data.rulesConfigured === false) {
+                    document.getElementById('danger-list').innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">Belum ada Knowledge Rules — jalankan skill <code>knowledge-rules</code> untuk mulai mendeteksi anti-pattern berbasis evidence, bukan tebakan nama folder.</p>';
+                } else if (dangerListHTML === '') {
                     document.getElementById('danger-list').innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No dangerous files found! Your codebase is healthy.</p>';
                 } else {
                     document.getElementById('danger-list').innerHTML = dangerListHTML;
@@ -612,149 +833,545 @@ ${steps}
             }
         }
 
-        function renderGraph() {
-            if (networkInstance) return; // Already rendered
+        async function fetchRules() {
+            try {
+                const res = await fetch('/api/rules');
+                const data = await res.json();
+                renderRules(data.rules || [], data.rulesConfigured);
+            } catch (e) {}
+        }
 
-            const container = document.getElementById('network-graph');
-            if (typeof vis === 'undefined') {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--danger);">Failed to load graph library. Please check your internet connection or use a local build.</div>';
+        function ruleCardHTML(rule) {
+            const severityBadge = rule.severity === 'Should'
+                ? '<span class="badge badge-should">Should</span>'
+                : '<span class="badge badge-must">Must</span>';
+            const sourceBadge = rule.source === 'manual'
+                ? '<span class="badge badge-manual">manual</span>'
+                : '<span class="badge badge-auto">auto</span>';
+            const enforced = (rule.enforcedVia || '').startsWith('linter:')
+                ? `<span class="badge badge-enforced">⚙️ ${rule.enforcedVia.split(':')[1] || 'Linter'}</span>`
+                : '<span class="badge badge-enforced">🤖 Agent review</span>';
+            const deleteBtn = rule.source === 'manual'
+                ? `<button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="deleteRule('${rule.id}')">Delete</button>`
+                : '';
+
+            return `<div class="rule-card">
+                <div class="rule-card-head">
+                    <span class="rule-card-title">${rule.id}: ${rule.title}</span>
+                    <div class="rule-card-badges">${severityBadge}${sourceBadge}${enforced}${deleteBtn}</div>
+                </div>
+                <div class="rule-card-rationale">${rule.rationale || ''}</div>
+            </div>`;
+        }
+
+        function renderRules(rules, rulesConfigured) {
+            const list = document.getElementById('rules-list');
+            const emptyState = document.getElementById('rules-empty-state');
+
+            if (rulesConfigured === false || rules.length === 0) {
+                list.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            list.innerHTML = rules.map(ruleCardHTML).join('');
+        }
+
+        async function addRule() {
+            const title = document.getElementById('rule-title').value;
+            const severity = document.getElementById('rule-severity').value || 'Must';
+            const rationale = document.getElementById('rule-rationale').value;
+            const detection = document.getElementById('rule-detection').value;
+            const fixGuidance = document.getElementById('rule-fix').value;
+
+            if (!title || !rationale) {
+                alert('Title and Rationale are required!');
                 return;
             }
 
-            // Dynamic Mermaid Parser
-            let nodesMap = new Map();
-            let edgesList = [];
-            let nodeIdCounter = 1;
-
-            function parseNode(str) {
-                const match = str.trim().match(/^([a-zA-Z0-9_-]+)(.*)$/);
-                if (!match) return null;
-                const rawId = match[1];
-                let label = rawId;
-                let shape = 'box';
-                const rest = match[2].trim();
-                if (rest) {
-                    const labelMatch = rest.match(/[\[\(\{]+(.*?)[\]\}\)]+/);
-                    if (labelMatch) label = labelMatch[1].replace(/["']/g, '');
-                    if (rest.includes('[((') || rest.includes('[([')) shape = 'database';
-                    else if (rest.includes('{')) shape = 'diamond';
-                    else if (rest.includes('((')) shape = 'ellipse';
+            try {
+                const res = await fetch('/api/rules', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title, severity, rationale, detection, fixGuidance })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('rule-msg').innerText = `✅ Added ${data.rule.id}`;
+                    ['rule-title', 'rule-rationale', 'rule-detection', 'rule-fix'].forEach(id => document.getElementById(id).value = '');
+                    setTimeout(() => document.getElementById('rule-msg').innerText = '', 5000);
+                    fetchRules();
+                } else {
+                    document.getElementById('rule-msg').innerText = '❌ ' + (data.error || 'Failed to add rule');
                 }
-                return { rawId, label, shape };
+            } catch (e) {
+                document.getElementById('rule-msg').innerText = '❌ Failed to add rule';
+            }
+        }
+
+        async function deleteRule(id) {
+            if (!confirm(`Delete ${id}?`)) return;
+            try {
+                const res = await fetch(`/api/rules/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    fetchRules();
+                } else {
+                    alert(data.error || 'Failed to delete rule');
+                }
+            } catch (e) {
+                alert('Failed to delete rule');
+            }
+        }
+
+        // --- Plans & Progress ---
+        let plansData = [];
+        let selectedPlanFilename = null;
+
+        async function fetchPlans() {
+            try {
+                const res = await fetch('/api/plans');
+                const data = await res.json();
+                plansData = data.plans || [];
+                renderPlanList();
+            } catch (e) {}
+        }
+
+        function renderPlanList() {
+            const list = document.getElementById('plans-list');
+            if (plansData.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">Belum ada plan — jalankan skill <code>writing-plans</code> untuk membuat satu.</p>';
+                return;
+            }
+            list.innerHTML = plansData.map(p => `
+                <div class="plan-item ${p.filename === selectedPlanFilename ? 'active' : ''}" onclick="selectPlan('${p.filename}')">
+                    <div class="plan-item-title">${p.title}</div>
+                    <div class="plan-item-meta">${p.date || 'no date'} · ${p.featureName || ''} · ${p.taskCount} task${p.taskCount === 1 ? '' : 's'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function selectPlan(filename) {
+            selectedPlanFilename = filename;
+            renderPlanList();
+            document.getElementById('plan-detail').innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">Loading...</p>';
+
+            try {
+                const [planRes, progressRes] = await Promise.all([
+                    fetch(`/api/plans/${encodeURIComponent(filename)}`),
+                    fetch('/api/progress')
+                ]);
+                const plan = await planRes.json();
+                const progress = await progressRes.json();
+                renderPlanDetail(plan, progress);
+                renderLedgerPanel(progress);
+            } catch (e) {
+                document.getElementById('plan-detail').innerHTML = '<p style="color: var(--danger); font-size: 13px;">Failed to load plan.</p>';
+            }
+        }
+
+        function renderPlanDetail(plan, progress) {
+            const detail = document.getElementById('plan-detail');
+            if (plan.error) {
+                detail.innerHTML = `<p style="color: var(--danger); font-size: 13px;">${plan.error}</p>`;
+                return;
+            }
+            if (!plan.tasks || plan.tasks.length === 0) {
+                detail.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">This plan has no <code>Task N:</code> headings.</p>';
+                return;
             }
 
+            // Three correlation modes, depending on whether the ledger names
+            // the plan it tracks (progress.planPath, added by a newer
+            // subagent-driven-development ledger — see Fase 4):
+            const hasActiveSession = !!progress.exists;
+            const ledgerPlanBasename = progress.planPath ? progress.planPath.split('/').pop() : null;
+            const matchesThisPlan = ledgerPlanBasename === plan.filename;
+            const knownOtherPlan = hasActiveSession && ledgerPlanBasename && !matchesThisPlan;
+            const numberOnlyFallback = hasActiveSession && !ledgerPlanBasename;
+
+            const completedNumbers = new Set(
+                (progress.entries || []).filter(e => e.taskNumber != null && e.status === 'complete').map(e => e.taskNumber)
+            );
+
+            let disclaimer = '';
+            if (numberOnlyFallback) {
+                disclaimer = `<div class="disclaimer">Status diambil dari sesi kerja aktif saat ini di worktree ini — mungkin bukan untuk plan yang sedang dilihat kalau kamu membuka beberapa plan lama sekaligus.</div>`;
+            }
+
+            // Two columns only — the ledger format (Task N: complete (...))
+            // never records an explicit "in progress" state, so that column
+            // always shows an honest empty message rather than a fake split.
+            const todoTasks = [];
+            const doneTasks = [];
+            plan.tasks.forEach(t => {
+                const done = !knownOtherPlan && (matchesThisPlan || numberOnlyFallback) && completedNumbers.has(t.number);
+                (done ? doneTasks : todoTasks).push(t);
+            });
+
+            const kanbanCard = t => `<div class="kanban-card"><span class="kanban-card-badge">#${t.number}</span><span>${t.title}</span></div>`;
+
+            detail.innerHTML = `
+                <h2>${plan.filename}</h2>
+                ${disclaimer}
+                <div class="kanban-board">
+                    <div class="kanban-col">
+                        <div class="kanban-col-title">Belum dikerjakan <span class="kanban-count">${todoTasks.length}</span></div>
+                        ${todoTasks.length ? todoTasks.map(kanbanCard).join('') : '<p class="kanban-empty">Semua task sudah selesai.</p>'}
+                    </div>
+                    <div class="kanban-col">
+                        <div class="kanban-col-title">Sedang berjalan <span class="kanban-count">0</span></div>
+                        <p class="kanban-empty">Belum ada tracking status in-progress secara eksplisit.</p>
+                    </div>
+                    <div class="kanban-col">
+                        <div class="kanban-col-title">Selesai <span class="kanban-count">${doneTasks.length}</span></div>
+                        ${doneTasks.length ? doneTasks.map(kanbanCard).join('') : '<p class="kanban-empty">Belum ada task selesai.</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderLedgerPanel(progress) {
+            const panel = document.getElementById('ledger-panel');
+            if (!progress.exists) {
+                panel.innerHTML = '';
+                return;
+            }
+            panel.innerHTML = `
+                <h3 style="font-size: 14px; font-weight: 400; margin-bottom: 12px;">Sesi Aktif — .spark/sdd/progress.md</h3>
+                <pre style="background: #000; border: 1px solid var(--glass-border); padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; color: var(--text-muted);">${progress.rawContent}</pre>
+            `;
+        }
+
+        // --- Memory Health ---
+        // Same 20-commit / 30-day threshold as the staleness gate in
+        // skills/audit, skills/bug-fix, skills/enhancement (Step 1b) —
+        // keep both in sync if either changes.
+        const MH_STALE_COMMITS = 20;
+        const MH_STALE_DAYS = 30;
+        const MH_CONFIDENCE_COLOR = {
+            'Confirmed from Code': 'var(--accent)',
+            'Not Applicable': 'var(--accent)',
+            'Inferred from Code Structure': '#555',
+            'Unverified Pattern': '#555',
+            'Documentation Conflict': 'var(--danger)',
+            'Insufficient Evidence': 'var(--danger)',
+            'AI-Risk': 'var(--danger)',
+        };
+
+        function scoreClass(score) {
+            if (score === null) return '';
+            if (score > 0.7) return 'score-good';
+            if (score >= 0.4) return 'score-mid';
+            return 'score-bad';
+        }
+
+        function isStale(file) {
+            if (file.commitsSinceLastScan != null && file.commitsSinceLastScan > MH_STALE_COMMITS) return true;
+            if (!file.lastScanned) return false;
+            const days = (Date.now() - new Date(file.lastScanned).getTime()) / 86400000;
+            return days > MH_STALE_DAYS;
+        }
+
+        function confidenceBarHTML(confidence) {
+            const total = Object.values(confidence).reduce((a, b) => a + b, 0);
+            if (total === 0) return '';
+            return `<div class="confidence-bar">${Object.entries(confidence)
+                .filter(([, count]) => count > 0)
+                .map(([label, count]) => `<span style="width: ${(count / total) * 100}%; background: ${MH_CONFIDENCE_COLOR[label] || '#555'};" title="${label}: ${count}"></span>`)
+                .join('')}</div>`;
+        }
+
+        async function fetchMemoryHealth() {
+            try {
+                const res = await fetch('/api/memory-health');
+                const data = await res.json();
+                renderMemoryHealth(data);
+            } catch (e) {}
+        }
+
+        // Optional badge on the Whiteboard tab showing ARCHITECTURE_GRAPH.md's
+        // dominant Confidence label. Skipped entirely (not faked) when Memory
+        // Health has no data for that file.
+        async function updateWhiteboardBadge() {
+            const badgeEl = document.getElementById('whiteboard-confidence-badge');
+            badgeEl.innerHTML = '';
+            try {
+                const res = await fetch('/api/memory-health');
+                const data = await res.json();
+                const file = (data.files || []).find(f => f.filename === 'ARCHITECTURE_GRAPH.md');
+                if (!file || file.insufficientData) return; // no data — no badge, not a guess
+
+                const dominant = Object.entries(file.confidence).sort((a, b) => b[1] - a[1])[0];
+                if (!dominant || dominant[1] === 0) return;
+                const [label] = dominant;
+
+                if (label === 'Confirmed from Code') {
+                    badgeEl.innerHTML = '<span class="confidence-badge confirmed">Confirmed</span>';
+                } else if (label === 'Unverified Pattern' || label === 'Insufficient Evidence') {
+                    badgeEl.innerHTML = '<span class="confidence-badge review">Perlu ditinjau</span>';
+                }
+                // Other dominant labels (Inferred, Documentation Conflict, AI-Risk,
+                // Not Applicable) intentionally show no badge rather than a guess
+                // at which color/wording fits them.
+            } catch (e) {} // Memory Health unavailable — tab still works, just no badge
+        }
+
+        function renderMemoryHealth(data) {
+            const empty = document.getElementById('mh-empty-state');
+            const content = document.getElementById('mh-content');
+
+            if (!data.files || data.files.length === 0) {
+                empty.classList.remove('hidden');
+                content.classList.add('hidden');
+                document.getElementById('mh-overall-score').innerText = '--';
+                document.getElementById('mh-total-gaps').innerText = '0 gaps';
+                return;
+            }
+            empty.classList.add('hidden');
+            content.classList.remove('hidden');
+
+            const overallEl = document.getElementById('mh-overall-score');
+            overallEl.innerText = data.overallScore == null ? '--' : data.overallScore;
+            overallEl.className = 'score-badge ' + scoreClass(data.overallScore);
+            document.getElementById('mh-total-gaps').innerText = `${data.totalGaps} gap${data.totalGaps === 1 ? '' : 's'}`;
+
+            document.getElementById('mh-table-body').innerHTML = data.files.map(f => {
+                if (f.insufficientData || !f.lastScanned && Object.values(f.confidence).every(c => c === 0)) {
+                    return `<tr><td>${f.filename}</td><td colspan="4" style="color: var(--text-muted);">Format tidak dikenali — cek manual</td></tr>`;
+                }
+                const staleBadge = isStale(f) ? '<span class="stale-badge">⚠️ perlu re-scan</span>' : '';
+                const commitsText = f.commitsSinceLastScan == null ? '—' : `${f.commitsSinceLastScan} commits`;
+                return `<tr>
+                    <td>${f.filename}</td>
+                    <td>${f.lastScanned || '—'}</td>
+                    <td>${commitsText} ${staleBadge}</td>
+                    <td>${confidenceBarHTML(f.confidence)}</td>
+                    <td class="${scoreClass(f.score)}">${f.score == null ? '—' : f.score}</td>
+                </tr>`;
+            }).join('');
+
+            const gapsList = document.getElementById('mh-gaps-list');
+            const filesWithGaps = data.files.filter(f => f.gaps && f.gaps.length > 0);
+            if (filesWithGaps.length === 0) {
+                gapsList.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No Gaps / Unknowns recorded.</p>';
+            } else {
+                gapsList.innerHTML = filesWithGaps.map(f => `
+                    <div class="gap-group">
+                        <div class="gap-group-title">${f.filename}</div>
+                        ${f.gaps.map(g => `<div class="gap-item">• ${g}</div>`).join('')}
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function renderGraph() {
+            const container = document.getElementById('network-graph');
+
+            // Cache hit: docsData hasn't changed since the last render in this
+            // session — the container still holds that render, do nothing.
+            if (graphsRendered && renderedGraphsCache === docsData) return;
+
+            if (typeof window.mermaid === 'undefined') {
+                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--danger);">Failed to load Mermaid.js. Please check your internet connection or use a local build.</div>';
+                return;
+            }
+
+            // Collect every ```mermaid block across all .docs/*.md files.
+            const blocks = [];
             docsData.forEach(doc => {
                 const mermaidRegex = /```mermaid\s+([\s\S]*?)```/g;
                 let match;
                 while ((match = mermaidRegex.exec(doc.content)) !== null) {
-                    const lines = match[1].split('\n');
-                    lines.forEach(line => {
-                        let l = line.trim();
-                        if (!l || l.startsWith('graph') || l.startsWith('flowchart') || l.startsWith('subgraph') || l.startsWith('end')) return;
-
-                        // Normalize Mermaid links (dotted, thick, solid without arrow, and inline labels)
-                        l = l.replace(/-\.->/g, '-->')
-                             .replace(/==>/g, '-->')
-                             .replace(/---/g, '-->')
-                             .replace(/-\.-/g, '-->')
-                             .replace(/===/g, '-->');
-                             
-                        // Normalize inline labels like A -- label --> B to A -->|label| B
-                        l = l.replace(/--\s*([^>]+?)\s*-->/g, '-->|$1|')
-                             .replace(/-\.\s*([^>]+?)\s*\.->/g, '-->|$1|')
-                             .replace(/==\s*([^>]+?)\s*==>/g, '-->|$1|');
-
-                        const parts = l.split('-->');
-                        if (parts.length >= 2) {
-                            let fromPart = parts[0].trim();
-                            let toPart = parts.slice(1).join('-->').trim();
-                            
-                            let edgeLabel = '';
-                            if (toPart.startsWith('|')) {
-                                const pipeEnd = toPart.indexOf('|', 1);
-                                if (pipeEnd > -1) {
-                                    edgeLabel = toPart.substring(1, pipeEnd).trim();
-                                    toPart = toPart.substring(pipeEnd + 1).trim();
-                                }
-                            }
-
-                            const fNode = parseNode(fromPart);
-                            const tNode = parseNode(toPart);
-
-                            if (fNode && tNode) {
-                                if (!nodesMap.has(fNode.rawId)) {
-                                    nodesMap.set(fNode.rawId, { id: nodeIdCounter++, label: fNode.label, shape: fNode.shape, color: { background: '#151515', border: '#2a2a2a' } });
-                                }
-                                if (!nodesMap.has(tNode.rawId)) {
-                                    nodesMap.set(tNode.rawId, { id: nodeIdCounter++, label: tNode.label, shape: tNode.shape, color: { background: '#151515', border: '#2a2a2a' } });
-                                }
-
-                                edgesList.push({
-                                    from: nodesMap.get(fNode.rawId).id,
-                                    to: nodesMap.get(tNode.rawId).id,
-                                    arrows: 'to',
-                                    label: edgeLabel
-                                });
-                            }
-                        }
-                    });
+                    blocks.push({ sourceFile: doc.filename, source: match[1].trim() });
                 }
             });
 
-            if (nodesMap.size === 0) {
+            if (blocks.length === 0) {
                 container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted);">No Mermaid architecture graphs found in .docs/ files. Run the project-scanner skill first.</div>';
+                graphsRendered = true;
+                renderedGraphsCache = docsData;
                 return;
             }
 
-            const nodes = new vis.DataSet(Array.from(nodesMap.values()));
-            const edges = new vis.DataSet(edgesList);
-            const data = { nodes, edges };
-            const options = {
-                nodes: { 
-                    font: { color: '#f4f4f4', face: 'Inter', size: 14 }, 
-                    margin: 12,
-                    borderWidth: 1,
-                    color: { background: '#151515', border: '#2a2a2a' },
-                    shapeProperties: { borderRadius: 6 }
-                },
-                edges: { 
-                    color: { color: '#2a2a2a' }, 
-                    font: { color: '#888888', align: 'horizontal', background: '#0d0d0d', strokeWidth: 0, face: 'Courier New', size: 11 },
-                    smooth: { type: 'cubicBezier' }
-                },
-                layout: {
-                    hierarchical: {
-                        direction: 'UD',
-                        sortMethod: 'directed',
-                        nodeSpacing: 150,
-                        levelSeparation: 150
+            // Build one card per diagram, each with its own body div to render into.
+            container.innerHTML = blocks.map((b, i) => `
+                <div class="graph-card">
+                    <div class="graph-card-label">Dari ${b.sourceFile}</div>
+                    <div class="graph-card-body" id="mermaid-graph-${i}">
+                        <div style="padding: 20px; color: var(--text-muted); font-size: 13px;">Rendering...</div>
+                    </div>
+                </div>
+            `).join('');
+
+            for (let i = 0; i < blocks.length; i++) {
+                const bodyEl = document.getElementById(`mermaid-graph-${i}`);
+                try {
+                    const { svg } = await window.mermaid.render(`mermaid-svg-${i}`, blocks[i].source);
+                    bodyEl.innerHTML = svg;
+                    if (typeof svgPanZoom !== 'undefined') {
+                        const svgEl = bodyEl.querySelector('svg');
+                        if (svgEl) svgPanZoom(svgEl, { zoomEnabled: true, controlIconsEnabled: true, minZoom: 0.3, maxZoom: 5 });
                     }
-                },
-                physics: { 
-                    hierarchicalRepulsion: { nodeDistance: 150 }
+                } catch (e) {
+                    bodyEl.innerHTML = `<div style="padding: 20px; color: var(--danger); font-size: 13px;">Gagal merender diagram dari ${blocks[i].sourceFile} — sintaks Mermaid tidak valid.</div>`;
                 }
-            };
-            networkInstance = new vis.Network(container, data, options);
+            }
+
+            graphsRendered = true;
+            renderedGraphsCache = docsData;
         }
 
         // --- API Exporter Logic ---
         let detectedEndpoints = [];
 
-        function extractEndpoints() {
-            detectedEndpoints = [];
-            // Parse through all docs to find patterns like: - **GET** `/api/users`
-            docsData.forEach(doc => {
-                const regex = /(GET|POST|PUT|PATCH|DELETE)[^a-zA-Z0-9/]+([/\w:-]+)/gi;
-                let match;
-                while ((match = regex.exec(doc.content)) !== null) {
-                    const method = match[1].toUpperCase();
-                    const path = match[2];
-                    if (!detectedEndpoints.find(e => e.method === method && e.path === path) && path.includes('/')) {
-                        detectedEndpoints.push({ method, path });
-                    }
-                }
+        // project-scanner documents these fields for an API_CONTRACT.md endpoint
+        // group but doesn't fix their exact markdown form (heading, bold, bullet,
+        // plain) — every extractor below is a tolerant text heuristic, same
+        // spirit as the Memory Health "Last Scanned" parsing.
+        const API_CONTRACT_FIELD_LABELS = [
+            'Purpose', 'Business Context', 'Authentication', 'Authorization',
+            'Request DTO', 'Response DTO', 'Validation', 'Business Rules',
+            'Error Responses', 'Related Features', 'Related Domains',
+            'Related Services', 'Related Stores', 'Related Workflow'
+        ];
+
+        function headingLevel(line) {
+            const m = line.match(/^(#{1,6})\s/);
+            return m ? m[1].length : 0;
+        }
+
+        // One endpoint group = a heading line naming a METHOD + path, plus
+        // everything until the next heading of the same or shallower level
+        // (deeper headings, e.g. "#### Request DTO", stay inside the section).
+        function findEndpointSections(content) {
+            const lines = content.split('\n');
+            const headings = [];
+            lines.forEach((line, i) => {
+                const lvl = headingLevel(line);
+                if (lvl) headings.push({ i, lvl, line });
             });
 
+            const sections = [];
+            headings.forEach((h, hi) => {
+                const m = h.line.match(/\b(GET|POST|PUT|PATCH|DELETE)\b\s+(\/[^\s`*_)]+)/i);
+                if (!m) return;
+                let endLine = lines.length;
+                for (let j = hi + 1; j < headings.length; j++) {
+                    if (headings[j].lvl <= h.lvl) { endLine = headings[j].i; break; }
+                }
+                sections.push({
+                    method: m[1].toUpperCase(),
+                    path: m[2].replace(/[.,;:]+$/, ''),
+                    sectionText: lines.slice(h.i, endLine).join('\n')
+                });
+            });
+            return sections;
+        }
+
+        // Splits one endpoint section into { "Purpose": "...", "Request DTO": "...", ... }
+        // by finding lines that name a known field label — as a heading, bold,
+        // bulleted, or plain line — case-insensitively, tolerant of spacing.
+        function splitLabeledSections(text, labels) {
+            const escaped = labels.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+            const re = new RegExp(`^\\s*#{0,6}\\s*[-*]?\\s*\\*{0,2}(${escaped})[*:\\s]*(.*)$`, 'gim');
+            const matches = [...text.matchAll(re)];
+            const result = {};
+            matches.forEach((m, i) => {
+                const canonical = labels.find(l => l.toLowerCase() === m[1].toLowerCase());
+                const inline = (m[2] || '').trim();
+                const start = m.index + m[0].length;
+                const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+                const body = [inline, text.slice(start, end).trim()].filter(Boolean).join('\n');
+                result[canonical] = result[canonical] ? `${result[canonical]}\n${body}` : body;
+            });
+            return result;
+        }
+
+        // "- cif: string — nomor identitas nasabah" -> { name: "cif", type: "string", description: "nomor identitas nasabah" }
+        // Field names are kept exactly as documented, including Indonesian names.
+        function parseDTOFields(text) {
+            if (!text) return [];
+            const bulletRe = /^[-*]\s+`?([a-zA-Z0-9_]+)`?\s*(?:\(([^)]+)\))?\s*[:\-—]\s*(.*)$/;
+            return text.split('\n')
+                .map(l => l.trim())
+                .filter(Boolean)
+                .map(line => {
+                    const m = line.match(bulletRe);
+                    if (!m) return null;
+                    const rest = (m[3] || '').trim();
+                    const typeMatch = `${m[2] || ''} ${rest}`.match(/\b(string|number|integer|boolean|bool|date|datetime|array|object)\b/i);
+                    const description = typeMatch
+                        ? rest.replace(new RegExp(`^${typeMatch[1]}\\s*[—\\-:]?\\s*`, 'i'), '').trim()
+                        : rest;
+                    return { name: m[1], type: typeMatch ? typeMatch[1].toLowerCase() : null, description };
+                })
+                .filter(Boolean);
+        }
+
+        // "401: unauthenticated for invalid credentials" -> { code: 401, message: "..." }
+        function parseErrorResponses(text) {
+            if (!text) return [];
+            const re = /^[-*]?\s*`?(\d{3})`?\s*[:\-—]\s*(.*)$/;
+            return text.split('\n')
+                .map(l => l.trim())
+                .filter(Boolean)
+                .map(line => {
+                    const m = line.match(re);
+                    return m ? { code: parseInt(m[1], 10), message: m[2].trim() } : null;
+                })
+                .filter(Boolean);
+        }
+
+        // Candidate custom headers mentioned in Authentication/Authorization prose
+        // (e.g. "menggunakan header x-branch-id untuk konteks cabang").
+        function extractRelatedHeaders(text) {
+            if (!text) return [];
+            const matches = text.match(/\b(x-[a-zA-Z0-9-]+|Authorization|Accept-Version)\b/gi) || [];
+            const seen = new Set();
+            return matches.filter(h => {
+                const key = h.toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function extractEndpoints() {
+            detectedEndpoints = [];
+
+            docsData.forEach(doc => {
+                findEndpointSections(doc.content).forEach(ep => {
+                    const fields = splitLabeledSections(ep.sectionText, API_CONTRACT_FIELD_LABELS);
+                    const authText = [fields['Authentication'], fields['Authorization']].filter(Boolean).join(' ');
+                    detectedEndpoints.push({
+                        method: ep.method,
+                        path: ep.path,
+                        purpose: (fields['Purpose'] || '').split('\n')[0].trim() || null,
+                        authentication: authText.trim() || null,
+                        requestDTO: parseDTOFields(fields['Request DTO']),
+                        responseDTO: parseDTOFields(fields['Response DTO']),
+                        errorResponses: parseErrorResponses(fields['Error Responses']),
+                        relatedHeaders: extractRelatedHeaders(authText),
+                        sourceFile: doc.filename
+                    });
+                });
+            });
+
+            // De-dup by method+path — same endpoint can legitimately appear in
+            // more than one doc section; keep the first (richest-parsed) one.
+            const seen = new Set();
+            detectedEndpoints = detectedEndpoints.filter(e => {
+                const key = `${e.method} ${e.path}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            renderEndpointList();
+        }
+
+        function renderEndpointList() {
             const list = document.getElementById('endpoint-list');
             if (detectedEndpoints.length > 0) {
                 document.getElementById('endpoint-count').innerText = `${detectedEndpoints.length} Endpoints`;
@@ -766,6 +1383,9 @@ ${steps}
                         <span style="font-family: var(--font-mono); font-size: 14px; color: var(--text-main);">${ep.path}</span>
                     </div>`;
                 });
+            } else {
+                document.getElementById('endpoint-count').innerText = '0 items';
+                list.innerHTML = '<p style="color: var(--text-muted); padding: 20px; text-align: center; font-size: 14px;">No endpoints found.</p>';
             }
         }
 
@@ -773,110 +1393,231 @@ ${steps}
             document.querySelectorAll('.ep-checkbox').forEach(el => el.checked = cb.checked);
         }
 
-        function getHeuristicMock(path) {
-            const p = path.toLowerCase();
-            if (p.includes('user')) return { id: "USR-123", name: "John Doe", email: "john@example.com", role: "admin", createdAt: "2026-07-01T10:00:00Z" };
-            if (p.includes('product') || p.includes('item')) return { id: "PRD-456", name: "Premium Widget", price: 99.99, stock: 50 };
-            if (p.includes('order') || p.includes('transaction')) return { id: "ORD-789", total: 99.99, status: "completed" };
-            if (p.includes('auth') || p.includes('login')) return { token: "eyJhbGci...", user: { id: 1, role: "user" } };
-            return { id: "123", status: "success", message: "Operation completed successfully." };
+        // Generates one field's example value from its own name/type/description
+        // — never from the endpoint path. Field names are never renamed.
+        function mockValueForField(field) {
+            const name = field.name;
+            const lower = name.toLowerCase();
+            const desc = (field.description || '').toLowerCase();
+
+            if (/^(id|no|nomor)|(id|no|nomor)$/i.test(name)) {
+                return String(Math.floor(1000000000 + Math.random() * 8999999999));
+            }
+            if (/nama|^name$|name$/i.test(lower)) return "John Doe";
+            if (/tanggal|date/i.test(lower) || field.type === 'date' || field.type === 'datetime') {
+                return new Date().toISOString().slice(0, 10);
+            }
+            if (/nilai|harga/i.test(lower)) return "Rp1.000.000";
+            if (/price|total|amount/i.test(lower)) return 99.99;
+            if (/status/i.test(lower)) {
+                const enumMatch = desc.match(/[a-z]+(?:\s*\/\s*[a-z]+)+/i);
+                return enumMatch ? enumMatch[0].split('/')[0].trim() : "active";
+            }
+
+            switch (field.type) {
+                case 'number': case 'integer': return 1;
+                case 'boolean': case 'bool': return true;
+                case 'array': return [];
+                case 'object': return {};
+                case 'datetime': return new Date().toISOString();
+                default: return `sample ${name}`;
+            }
+        }
+
+        // Honest fallback when a DTO wasn't parsed at all — never a generic
+        // "John Doe"/"USR-123" guess pretending to be real data.
+        function buildMockFromFields(fields, undocumentedLabel) {
+            if (!fields || fields.length === 0) {
+                return { note: `${undocumentedLabel} tidak terdokumentasi di API_CONTRACT.md — isi contoh ini manual` };
+            }
+            const obj = {};
+            fields.forEach(f => { obj[f.name] = mockValueForField(f); });
+            return obj;
+        }
+
+        function toggleExporterAuthFields() {
+            const type = document.getElementById('exp-auth-type').value;
+            document.getElementById('exp-auth-basic-fields').classList.toggle('hidden', type !== 'basic');
+            document.getElementById('exp-auth-bearer-fields').classList.toggle('hidden', type !== 'bearer');
+        }
+
+        function parseCustomHeaders() {
+            const raw = document.getElementById('exp-custom-headers').value;
+            return raw.split('\n')
+                .map(l => l.trim())
+                .filter(Boolean)
+                .map(line => {
+                    const idx = line.indexOf(':');
+                    if (idx === -1) return null;
+                    return { key: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() };
+                })
+                .filter(Boolean);
+        }
+
+        function buildExporterAuth() {
+            const type = document.getElementById('exp-auth-type').value;
+            if (type === 'basic') {
+                return {
+                    auth: {
+                        type: 'basic',
+                        basic: [
+                            { key: 'username', value: document.getElementById('exp-auth-username').value || '{{username}}', type: 'string' },
+                            { key: 'password', value: document.getElementById('exp-auth-password').value || '{{password}}', type: 'string' }
+                        ]
+                    },
+                    headers: []
+                };
+            }
+            if (type === 'bearer') {
+                const token = document.getElementById('exp-auth-token').value || '{{token}}';
+                return { auth: null, headers: [{ key: 'Authorization', value: `Bearer ${token}` }] };
+            }
+            return { auth: null, headers: [] };
+        }
+
+        // "/gold-deposit/list" -> "Gold Deposit List"; ":id"/param segments are
+        // dropped since they don't add a readable word to the name.
+        function humanizeEndpointName(method, path) {
+            const verbs = { GET: 'Get', POST: 'Create', PUT: 'Update', PATCH: 'Update', DELETE: 'Delete' };
+            const words = path.split('/')
+                .filter(seg => seg && !seg.startsWith(':'))
+                .map(seg => seg.replace(/[-_]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2'))
+                .join(' ')
+                .split(' ')
+                .filter(Boolean)
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                .join(' ');
+            return `${verbs[method] || method} ${words}`.trim();
+        }
+
+        const HTTP_STATUS_TEXT = {
+            400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found',
+            409: 'Conflict', 422: 'Unprocessable Entity', 429: 'Too Many Requests', 500: 'Internal Server Error'
+        };
+
+        // Translates the endpoint's own documented Authentication/Authorization
+        // text into a Postman auth block. Returns null (not { type: 'noauth' })
+        // when nothing is documented, so the caller can fall back to the
+        // manual Request Config panel instead of silently forcing "noauth".
+        function translateAuthBlock(authText) {
+            if (!authText) return null;
+            const lower = authText.toLowerCase();
+            if (/basic|username.*password/.test(lower)) {
+                return { type: 'basic', basic: [
+                    { key: 'username', value: '{{username}}', type: 'string' },
+                    { key: 'password', value: '{{password}}', type: 'string' }
+                ]};
+            }
+            if (/bearer|jwt|access.?token/.test(lower)) {
+                return { type: 'bearer', bearer: [{ key: 'token', value: '{{accessToken}}' }] };
+            }
+            return null; // documented, but not a recognizable scheme — don't guess
+        }
+
+        // "x-branch-id" -> "branchId", "Accept-Version" -> "acceptVersion"
+        function headerNameToVariable(headerName) {
+            return headerName.toLowerCase().replace(/^x-/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+        }
+
+        function buildDocHeaders(relatedHeaders) {
+            return relatedHeaders
+                .filter(h => h.toLowerCase() !== 'authorization') // covered by the auth block instead
+                .map(h => ({ key: h, value: `{{${headerNameToVariable(h)}}}` }));
         }
 
         function exportPostman() {
             const selectedIndices = Array.from(document.querySelectorAll('.ep-checkbox:checked')).map(cb => parseInt(cb.value));
             if (selectedIndices.length === 0) return alert("Select at least one endpoint!");
 
+            const manual = buildExporterAuth(); // fallback for endpoints with no documented auth
+            const manualCustomHeaders = parseCustomHeaders();
+            let usedManualBearer = false;
+
             const collection = {
                 info: {
                     name: "SPARK Generated Collection",
-                    description: "Auto-generated API Collection with positive & negative cases using SPARK AI heuristics.",
+                    description: "Auto-generated from Request/Response DTOs and Error Responses documented in .docs/API_CONTRACT.md.",
                     schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
                 },
-                item: []
+                item: [],
+                variable: [{ key: 'baseUrl', value: '' }]
             };
 
             selectedIndices.forEach(idx => {
                 const ep = detectedEndpoints[idx];
-                const mock = getHeuristicMock(ep.path);
-                
-                // Construct URL
-                const urlParts = ep.path.split('/').filter(p => p);
-                const pathArr = urlParts.map(p => p.startsWith(':') ? `{{${p.replace(':','')}}}` : p);
 
-                const item = {
-                    name: `${ep.method} ${ep.path}`,
-                    item: [
-                        {
-                            name: "Positive Case (200 OK)",
-                            request: {
-                                method: ep.method,
-                                header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
-                                body: ep.method !== 'GET' ? { mode: "raw", raw: JSON.stringify(mock, null, 2) } : undefined,
-                                url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
-                            },
-                            response: [{
-                                name: "Success",
-                                originalRequest: {
-                                    method: ep.method,
-                                    header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
-                                    body: ep.method !== 'GET' ? { mode: "raw", raw: JSON.stringify(mock, null, 2) } : undefined,
-                                    url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
-                                },
-                                status: "OK",
-                                code: 200,
-                                _postman_previewlanguage: "json",
-                                header: [{ key: "Content-Type", value: "application/json" }],
-                                body: JSON.stringify({ success: true, data: mock }, null, 2)
-                            }]
-                        },
-                        {
-                            name: "Negative Case (400 Bad Request)",
-                            request: {
-                                method: ep.method,
-                                header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
-                                body: ep.method !== 'GET' ? { mode: "raw", raw: "{}" } : undefined,
-                                url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
-                            },
-                            response: [{
-                                name: "Bad Request",
-                                originalRequest: {
-                                    method: ep.method,
-                                    header: [{ key: "Authorization", value: "Bearer {{token}}" }, { key: "Content-Type", value: "application/json" }],
-                                    body: ep.method !== 'GET' ? { mode: "raw", raw: "{}" } : undefined,
-                                    url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
-                                },
-                                status: "Bad Request",
-                                code: 400,
-                                _postman_previewlanguage: "json",
-                                header: [{ key: "Content-Type", value: "application/json" }],
-                                body: JSON.stringify({ success: false, error: { code: "VALIDATION_ERROR", message: "Invalid parameters provided" } }, null, 2)
-                            }]
-                        },
-                        {
-                            name: "Negative Case (401 Unauthorized)",
-                            request: {
-                                method: ep.method,
-                                header: [], // No auth
-                                url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
-                            },
-                            response: [{
-                                name: "Unauthorized",
-                                originalRequest: {
-                                    method: ep.method,
-                                    header: [], // No auth
-                                    url: { raw: `{{baseUrl}}/${pathArr.join('/')}`, host: ["{{baseUrl}}"], path: pathArr }
-                                },
-                                status: "Unauthorized",
-                                code: 401,
-                                _postman_previewlanguage: "json",
-                                header: [{ key: "Content-Type", value: "application/json" }],
-                                body: JSON.stringify({ success: false, error: { code: "UNAUTHORIZED", message: "Missing or invalid token" } }, null, 2)
-                            }]
-                        }
-                    ]
+                const [rawPath, rawQueryStr] = ep.path.split('?');
+                const pathArr = rawPath.split('/').filter(Boolean).map(s => s.startsWith(':') ? `{{${s.slice(1)}}}` : s);
+
+                let query = [];
+                if (rawQueryStr) {
+                    query = rawQueryStr.split('&').filter(Boolean).map(pair => {
+                        const [k, v] = pair.split('=');
+                        return { key: k, value: v || '' };
+                    });
+                } else if (ep.method === 'GET' && ep.requestDTO.length > 0) {
+                    query = ep.requestDTO.map(f => ({ key: f.name, value: String(mockValueForField(f)) }));
+                }
+
+                const queryStr = query.length ? '?' + query.map(q => `${q.key}=${q.value}`).join('&') : '';
+                const url = {
+                    raw: `{{baseUrl}}/${pathArr.join('/')}${queryStr}`,
+                    protocol: '{{protocol}}',
+                    host: ['{{baseUrl}}'],
+                    path: pathArr,
+                    ...(query.length ? { query } : {})
                 };
-                collection.item.push(item);
+
+                const docAuth = translateAuthBlock(ep.authentication);
+                const auth = docAuth || manual.auth || { type: 'noauth' };
+                if (!docAuth && manual.auth && manual.auth.type === 'bearer') usedManualBearer = true;
+
+                const docHeaders = buildDocHeaders(ep.relatedHeaders);
+                const fallbackAuthHeaders = docAuth ? [] : manual.headers; // e.g. manual Bearer's Authorization header
+                const mergedCustom = [...docHeaders];
+                [...fallbackAuthHeaders, ...manualCustomHeaders].forEach(h => {
+                    if (!mergedCustom.find(m => m.key.toLowerCase() === h.key.toLowerCase())) mergedCustom.push(h);
+                });
+                const header = [{ key: 'Content-Type', value: 'application/json' }, ...mergedCustom];
+
+                const bodyMock = ep.method !== 'GET' ? buildMockFromFields(ep.requestDTO, 'Request DTO') : null;
+
+                const request = {
+                    auth,
+                    method: ep.method,
+                    header,
+                    ...(bodyMock ? { body: { mode: 'raw', raw: JSON.stringify(bodyMock, null, 2) } } : {}),
+                    url
+                };
+
+                const responses = [{
+                    name: 'Positive',
+                    status: 'OK',
+                    code: 200,
+                    header: [{ key: 'content-type', value: 'application/json' }],
+                    body: JSON.stringify(buildMockFromFields(ep.responseDTO, 'Response DTO'), null, 2)
+                }];
+
+                // Only one entry per documented error code — never invented.
+                ep.errorResponses.forEach(err => {
+                    const statusText = HTTP_STATUS_TEXT[err.code] || 'Error';
+                    responses.push({
+                        name: `Negative - ${statusText} (${err.code})`,
+                        status: statusText,
+                        code: err.code,
+                        header: [{ key: 'content-type', value: 'application/json' }],
+                        body: JSON.stringify({ code: err.code, message: err.message }, null, 2)
+                    });
+                });
+
+                collection.item.push({
+                    name: ep.purpose || humanizeEndpointName(ep.method, rawPath),
+                    request,
+                    response: responses
+                });
             });
+
+            if (usedManualBearer) collection.variable.push({ key: 'token', value: '' });
 
             downloadFile(JSON.stringify(collection, null, 2), 'SPARK_API_Collection.json', 'application/json');
         }
@@ -896,9 +1637,53 @@ ${steps}
             URL.revokeObjectURL(url);
         }
 
+        // --- Security Gate ---
+        // Always-visible header badge: how many tasks in the actively-tracked
+        // plan are still not marked complete in .spark/sdd/progress.md.
+        // "0 pending" and "no active session" are kept as distinct states —
+        // never collapse "no data" into a fake 0.
+        async function updateSecurityGate() {
+            const el = document.getElementById('security-gate-badge');
+            if (!el) return;
+            try {
+                const progress = await (await fetch('/api/progress')).json();
+                if (!progress.exists) {
+                    el.innerHTML = '<span class="security-gate-badge neutral">🔒 Tidak ada sesi aktif</span>';
+                    return;
+                }
+
+                const completedCount = (progress.entries || [])
+                    .filter(e => e.taskNumber != null && e.status === 'complete').length;
+
+                let planFilename = progress.planPath ? progress.planPath.split('/').pop() : null;
+                if (!planFilename) {
+                    const plansData = await (await fetch('/api/plans')).json();
+                    if ((plansData.plans || []).length === 1) planFilename = plansData.plans[0].filename;
+                }
+                if (!planFilename) {
+                    el.innerHTML = '<span class="security-gate-badge neutral">🔒 Plan aktif tidak diketahui</span>';
+                    return;
+                }
+
+                const plan = await (await fetch(`/api/plans/${encodeURIComponent(planFilename)}`)).json();
+                if (plan.error || !plan.tasks) {
+                    el.innerHTML = '<span class="security-gate-badge neutral">🔒 Plan aktif tidak diketahui</span>';
+                    return;
+                }
+
+                const pending = Math.max(0, plan.tasks.length - completedCount);
+                el.innerHTML = pending === 0
+                    ? '<span class="security-gate-badge clean">🔓 Semua bersih</span>'
+                    : `<span class="security-gate-badge pending">🔒 ${pending} pending</span>`;
+            } catch (e) {
+                el.innerHTML = '<span class="security-gate-badge neutral">🔒 Tidak tersedia</span>';
+            }
+        }
+
         // Init
         fetchStatus();
         fetchDocs();
+        updateSecurityGate();
 
     </script>
 </body>

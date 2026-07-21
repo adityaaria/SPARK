@@ -295,6 +295,14 @@ The Pi package loads the SPARK skills and a small extension that injects the `us
 - **writing-skills** - Create new skills following best practices (includes testing methodology)
 - **using-spark** - Introduction to the skills system
 
+## Keeping Project Memory Fresh
+
+`.docs/` project memory stays current automatically via Delta Scan Mode
+(`project-scanner`) and a staleness gate built into `audit`/`bug-fix`/
+`enhancement` — no setup needed. An optional scheduled CI workflow template
+for your own project's repo is also available: see
+[docs/auto-refresh-project-memory.md](docs/auto-refresh-project-memory.md).
+
 ## Philosophy
 
 - **Test-Driven Development** - Write tests first, always
