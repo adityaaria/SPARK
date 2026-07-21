@@ -186,7 +186,7 @@ mkdir -p "$update_home/.claude" "$update_project"
     HOME="$update_home" bash "$installed_repo/bin/spark-install.sh" --agent=claude-code --yes >/dev/null 2>&1
 )
 
-perl -0pi -e 's/"version": "6\.1\.5"/"version": "6.1.6"/' "$seed_repo/package.json"
+perl -0pi -e 's/"version": "([^"]+)"/"version": "$1-updatetest"/' "$seed_repo/package.json"
 git -C "$seed_repo" add package.json
 git -C "$seed_repo" commit -q -m "bump version"
 git -C "$seed_repo" push -q origin main
