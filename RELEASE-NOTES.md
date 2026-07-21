@@ -2,6 +2,10 @@
 
 ## v6.3.0 (2026-07-21)
 
+### Not Visible to End Users: template-generator Consolidation
+
+`skills/template-generator/SKILL.md` cut from 2301 to 1716 words (25%) by merging 8 overlapping pipeline sections (Pattern Discovery through Template Projection, plus duplicate Responsibility/Blueprint-First Pipeline diagrams) into one `Pattern-to-Blueprint Pipeline` section, and trimming `Execution Checklist` from 15 restated items to 10 high-level final-gate checks. All technical substance (discovery signals, generalization examples, decision contracts, variability classes) preserved — only repeated framing removed. Frontmatter description rewritten to a pure trigger condition. No change to the 10-file `.docs/` input contract or the 10-file `.template/` output contract — file names, count, and order identical before/after.
+
 ### New: Knowledge Rules
 
 A new prescriptive layer for explicit coding-standard rules, sitting alongside (not inside) `.docs/`.
