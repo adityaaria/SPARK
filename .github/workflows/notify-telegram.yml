@@ -1,0 +1,48 @@
+name: Notify Telegram on Release
+
+# Jalan otomatis setiap kali release baru dipublikasikan di GitHub
+on:
+  release:
+    types: [published]
+
+  # Opsional: bisa juga dijalankan manual dari tab Actions untuk testing
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag versi (contoh: v2.4.0) untuk test manual"
+        required: true
+      release_name:
+        description: "Judul release untuk test manual"
+        required: false
+      release_body:
+        description: "Isi changelog untuk test manual"
+        required: false
+      release_url:
+        description: "Link release untuk test manual"
+        required: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Send Telegram notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Banner harus URL publik yang bisa diakses Telegram.
+          # Default: pakai gambar assets/banner.png dari repo ini via raw.githubusercontent.com
+          BANNER_URL: ${{ secrets.BANNER_URL }}
+          REPO_NAME: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name || github.event.inputs.release_name }}
+          RELEASE_BODY: ${{ github.event.release.body || github.event.inputs.release_body }}
+          RELEASE_URL: ${{ github.event.release.html_url || github.event.inputs.release_url }}
+        run: node scripts/notify-telegram.js
