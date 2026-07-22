@@ -81,6 +81,7 @@ Before generating templates, apply these rules:
 - prefer generic contract over concrete naming
 - prefer reusable pattern over business logic
 - prefer architecture decisions over folder names
+- prefer executable skeleton contracts over vague structure descriptions
 - extract why before how
 - extract reusable engineering knowledge before implementation details
 - evidence overrides assumptions
@@ -98,9 +99,12 @@ These rules are mandatory.
 - Do not scan raw source code unless clarification is truly required.
 - Do not generate implementation code.
 - Do not generate a new project. That is the responsibility of `project-onboarding`.
+- You may define placeholderized skeleton/example file contracts for `project-onboarding`, but the template itself must not become a generated application.
 - Do not copy project-specific business data directly into the template.
+- Do not reduce the template to parent folders only when Stable Memory supports deeper folder or file skeletons.
 - Convert concrete names into reusable placeholders.
 - Preserve proven architecture, structure, routing, API, database, testing, and UI architecture conventions.
+- Preserve reusable component and presentation architecture as business-neutral contracts.
 - Mark uncertain conclusions as `Needs Review`.
 - Keep output deterministic.
 - Keep output polyglot and framework agnostic.
@@ -120,7 +124,7 @@ A pattern advances only when the step before it supports it with evidence. Insuf
 
 **Validation** — reusable only if evidenced by Stable Memory, repeated enough to count as a convention, and not architecture/framework-specific, optional, replaceable, business-specific, or implementation leakage disguised as a pattern.
 
-**Generalization** — strip business specifics, keep the shape: `EmployeeProfile.vue` → `<FeatureName>Profile.<view_ext>`, `GET /employee` → `GET /<resource>`, `EmployeeModule` → `<FeatureName>Module`. Generalize names, not architecture — never carry over project-specific feature names, endpoints, org rules, or business workflows dressed as universal patterns.
+**Generalization** — strip business specifics, keep the shape: `<SourceDomain>Profile.<view_ext>` → `<FeatureName>Profile.<view_ext>`, `GET /<source-resource>` → `GET /<resource>`, `<SourceDomain>Module.<module_ext>` → `<FeatureName>Module.<module_ext>`. Generalize names, not architecture — never carry over project-specific feature names, endpoints, org rules, or business workflows dressed as universal patterns.
 
 **Architecture Abstraction** — presentation / application / state / integration / infrastructure layers, before naming any framework. Architecture is always the first layer; implementation is always the last, offered only as supporting evidence.
 
@@ -131,6 +135,140 @@ A pattern advances only when the step before it supports it with evidence. Insuf
 **Engineering Blueprint** — the shared reasoning layer: validated patterns, architecture abstractions, decisions, variability classifications, extension/evolution rules, anti-patterns, UI architecture patterns. Temporary — must never be written as its own file.
 
 **Template Projection** — the ten `.template` files read from that one blueprint: no file invents its own rules, terminology stays consistent across the set, implementation appears only as replaceable supporting evidence. Increase knowledge density, not document length.
+
+---
+
+# Business-Neutral Mirroring Blueprint
+
+When Stable Memory supports it, generate a template that can mirror the source project's reusable engineering shape into a new project with different business processes.
+
+Mirror:
+
+- project, workspace, module, feature, and layer structure
+- standard folder skeletons
+- standard file skeletons
+- route, API, model, validation, configuration, and testing patterns
+- reusable presentation/component hierarchy
+- layout, page template, view composition, and design-system strategy
+- dependency direction and boundary anti-patterns
+
+Replace or parameterize:
+
+- source business domains
+- source business workflows
+- source entity/resource names
+- source route/resource paths
+- source role, permission, tenant, organization, or approval terms
+- source copy, labels, seed data, and hardcoded business constants
+
+Never preserve source business semantics as universal architecture. If the source concept is only business-specific, convert it to a placeholder or mark it `Needs Review`.
+
+---
+
+# Standard Skeleton Projection
+
+The template must make generation operational, not merely descriptive.
+
+When evidenced by Stable Memory, project these details:
+
+- required root folders
+- required source folders
+- required nested folders for modules, features, domains, routes, APIs, models, validation, tests, presentation units, layouts, and configuration
+- optional folders with the condition that creates them
+- required files per project, module, feature, API surface, data model, test suite, layout, page template, or reusable presentation unit
+- example files that `project-onboarding` may generate when the template has enough evidence
+- files or folders that must be copied from an approved baseline repository or local template directory instead of invented
+- files or folders that must not be copied because they contain source business behavior
+
+Use placeholders for names and extensions. Examples: `<FeatureName>`, `<feature-name>`, `<resource>`, `<route_base_path>`, `<module_ext>`, `<view_ext>`, `<test_ext>`. Do not force a language or framework unless the approved template source requires it.
+
+Example file contracts must be minimal and business-neutral: names, responsibility, dependencies, placeholder replacement, and safe stub content if the approved template supports it. Do not invent framework-specific implementation bodies from memory alone.
+
+---
+
+# Generation Rules Required Shape
+
+`GENERATION_RULES.md` must be specific enough for `project-onboarding` to execute without guessing. When Stable Memory supports the data, include these machine-readable or table-shaped sections using project-agnostic paths and placeholders:
+
+## `folders_to_create`
+
+For every required or conditionally required folder, define:
+
+- `path`
+- `required`
+- `condition`
+- `purpose`
+- `owner_layer`
+- `source_memory`
+- `needs_review`
+
+Include nested folders, not only parent folders, when the source memory proves nested standards.
+
+## `files_to_generate`
+
+For every file that onboarding may generate, define:
+
+- `path`
+- `required`
+- `condition`
+- `generation_strategy`: `empty`, `stub`, `copy_from_template_source`, or `needs_review`
+- `responsibility`
+- `allowed_content`: `business-neutral only`, `placeholderized domain example`, or `copied approved reusable infrastructure`
+- `dependencies`
+- `placeholders`
+- `source_memory`
+- `needs_review`
+
+Do not list a file as generatable if the template cannot define its responsibility and safe content boundary.
+
+## `reusable_units_to_generate`
+
+For every reusable presentation, layout, interaction, utility, or shared infrastructure unit, define:
+
+- `unit_name`
+- `layer`: primitive, composed, layout, page-template, feedback, form, data-display, navigation, utility, integration, or project-specific equivalent
+- `target_path`
+- `generation_strategy`
+- `copy_safety`: `Copy-safe`, `Stub-safe`, `Blueprint-only`, or `Business-specific`
+- `responsibility`
+- `must_not_depend_on`
+- `placeholders`
+- `source_memory`
+- `needs_review`
+
+Reusable units may be framework-specific only when the approved template source is framework-specific. Even then, classify the framework as a dependency of the template, not as a SPARK-wide rule.
+
+## `starter_feature_contracts`
+
+When the source memory supports a repeatable CRUD/workflow pattern, define a starter feature contract:
+
+- `feature_kind`: CRUD, read-only, wizard, report, dashboard, document, integration, or project-specific equivalent
+- `required_folders`
+- `required_files`
+- `optional_files`
+- `route_contract`
+- `state_contract`
+- `service_contract`
+- `api_or_interface_contract`
+- `dto_or_schema_contract`
+- `validation_contract`
+- `test_contract`
+- `reusable_units_used`
+- `business_variables_to_replace`
+
+This contract may include safe stub files, but must not embed source business rules.
+
+## `copy_policy`
+
+Classify template-source files and folders as:
+
+- `copy`: business-neutral reusable infrastructure
+- `stub`: reusable shape with target-specific implementation
+- `parameterize`: safe only after placeholder replacement
+- `omit`: source business behavior or unsafe implementation leakage
+- `needs_review`: not enough evidence
+
+This policy is mandatory when the accepted template source is an approved baseline repository or approved local template directory.
 
 ---
 
@@ -159,6 +297,19 @@ Must stay business-neutral (business-specific styling never becomes reusable des
 
 Extract reusable component architecture such as Primitive Components, Composed Components, Feature Components, Page Templates, Application Views. Document ownership and responsibility for each layer when evidenced; avoid implementation-specific assumptions.
 
+Also project reusable units into generation-ready contracts:
+
+- shared reusable unit root
+- feature-owned reusable unit root
+- layout unit root
+- page template root
+- naming patterns
+- dependency rules
+- minimum example files that may be generated
+- anti-patterns that generated examples must avoid
+
+Use framework-neutral language such as presentation unit, layout unit, application view, form pattern, data display pattern, feedback pattern, and navigation pattern. Mention React, Vue, Svelte, Tailwind, shadcn, Material UI, Vuetify, or similar tools only as classified implementation evidence or required template dependencies.
+
 ---
 
 # Styling Strategy Abstraction
@@ -183,6 +334,11 @@ Examples:
 - Store -> UI
 - Business Logic -> Component
 - Feature Utility -> Shared Utility
+- Presentation Unit -> Transport Client
+- Reusable Unit -> Business Workflow
+- Shared Component -> Feature-Specific Domain Type
+- Layout Unit -> Business Rule
+- Duplicated Interaction Pattern -> No Shared Abstraction
 - Circular Dependency
 - Large Components
 - Large Services
@@ -210,15 +366,15 @@ Every discovered technology should be classified, when evidenced, as one of: Arc
 Each file owns a distinct slice of the blueprint — no overlap, no reinvention:
 
 - **TEMPLATE_PROFILE.md** — template name, purpose, source project memory, supported project type, recommended tech stack, package manager, runtime requirements, intended/unsupported use cases, architecture summary, reusable engineering context.
-- **TEMPLATE_WORKFLOW.md** (most detailed projection) — project generation flow, folder/file creation flow, routing flow, API flow, database/model flow, validation flow, testing flow, and how to: add a feature, add a route, add an API client/endpoint, add a module/component, extend the template safely, evolve the architecture safely.
-- **FOLDER_STRUCTURE.md** — root-level, source, feature/module, shared/common, config, test, generated, and ignored folders.
-- **FILE_STRUCTURE.md** — required files, optional files, file naming rules, feature/config/test file patterns.
-- **CODE_STRUCTURE.md** — layering convention, component/module structure, business logic placement, validation placement, type/interface placement, error handling pattern, reusable utility pattern, engineering contracts, anti-pattern boundaries.
+- **TEMPLATE_WORKFLOW.md** (most detailed projection) — project generation flow, business-neutral mirroring flow, folder/file creation flow, reusable unit creation flow, routing flow, API flow, database/model flow, validation flow, testing flow, and how to: add a feature, add a route, add an API client/endpoint, add a module/component, add reusable presentation units, extend the template safely, evolve the architecture safely.
+- **FOLDER_STRUCTURE.md** — root-level, source, feature/module, shared/common, config, test, generated, ignored, reusable presentation, layout, page template, and optional folders. Include required nested folders when evidenced; do not stop at parent folders if the source memory proves deeper standards.
+- **FILE_STRUCTURE.md** — required files, optional files, example files, file naming rules, feature/config/test/reusable-unit file patterns, placeholderized extensions, and files that must be copied from an approved template source instead of invented.
+- **CODE_STRUCTURE.md** — layering convention, component/module structure, reusable presentation contract, business logic placement, validation placement, type/interface placement, error handling pattern, reusable utility pattern, engineering contracts, anti-pattern boundaries.
 - **ROUTING_STRUCTURE.md** — route file location, route/path naming, lazy-loading convention, nested-routing convention, route guard convention (if proven), menu/navigation relationship (if proven), routing evolution guidance.
 - **API_STRUCTURE.md** — API client/endpoint structure, request/response model pattern, DTO/schema convention, error response handling, auth header pattern (if proven), environment base-URL convention (if proven), transport/integration boundaries.
 - **DATABASE_STRUCTURE.md** — entity/model pattern, schema location, migration convention, repository/data-access pattern, naming convention, relationship convention. Mark `Not Applicable` if the source project has no database layer.
 - **TESTING_STRUCTURE.md** — test framework, test folder layout, unit/integration/e2e test patterns, test naming convention, test command surface, testing evolution guidance.
-- **GENERATION_RULES.md** — how `project-onboarding` should use the template: required/optional input variables, placeholder replacement rules, files to rename/update, post-generation commands, validation checks, failure handling. Guides template application — does not scaffold a project directly.
+- **GENERATION_RULES.md** — how `project-onboarding` should use the template: required/optional input variables, placeholder replacement rules, `folders_to_create`, `files_to_generate`, `example_files_allowed`, `files_to_copy_from_template_source`, reusable units to generate, files to rename/update, domain replacement rules, source business leakage checks, post-generation commands, validation checks, failure handling. Guides template application — does not scaffold a project directly.
 
 ---
 
@@ -236,6 +392,12 @@ Before generating templates, verify:
 - all architecture remains reusable
 - design system remains business-neutral
 - component ownership is preserved
+- standard folder and file skeletons are detailed when Stable Memory supports them
+- reusable presentation generation rules exist when reusable presentation memory exists
+- `GENERATION_RULES.md` contains operational sections when onboarding needs to create folders, files, reusable units, starter features, or copy from a template source
+- every generated/stubbed/copied file has a clear safety classification and evidence path
+- starter feature contracts exist when Stable Memory proves a repeatable feature pattern
+- business replacement rules prevent source business leakage
 - no project-specific styling leaks into reusable layers
 
 If any check fails, fix the blueprint before projection.

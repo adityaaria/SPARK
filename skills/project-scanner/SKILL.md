@@ -33,14 +33,17 @@ Persist only durable project knowledge such as:
 
 - technology stack
 - project structure
+- standard folder and file skeletons
 - workspace map
 - architecture graph
 - feature map
+- reusable presentation architecture
 - API contract
 - database catalog
 - business flow
 - domain map
 - existing testing strategy
+- stable boundary anti-patterns
 
 ## Never Persist Temporary Intelligence
 
@@ -63,6 +66,8 @@ If temporary findings are discovered during scanning, report them only in the fi
 - Recommended Next Actions
 
 Do **not** save those findings as permanent memory.
+
+Stable anti-pattern boundaries are allowed in `.docs/` only when they describe durable project rules supported by evidence, such as invalid dependency direction, misplaced business logic, unsafe shared-state ownership, or reusable presentation boundaries. Do not persist broad legacy inventories, severity triage, refactor wishlists, or temporary cleanup recommendations.
 
 ---
 
@@ -92,6 +97,16 @@ Never generate permanent intelligence artifacts such as:
 - ANALYSIS_SUMMARY.md
 
 The stable memory contract is limited to these 10 files only. Do not create `STANDARDS.md` or any other extra memory file outside this contract.
+
+When reusable component, presentation, layout, or standard skeleton knowledge is found, place it inside the existing 10-file contract:
+
+- `PROJECT_PROFILE.md` — UI/presentation architecture summary, design-system strategy, standard project skeleton summary
+- `ARCHITECTURE_GRAPH.md` — presentation/component layers, dependency direction, boundary anti-patterns
+- `WORKSPACE_MAP.md` — shared, feature-owned, layout, generated, test, and configuration folder boundaries
+- `FEATURE_MAP.md` — feature-to-view/page/component composition and ownership
+- `DOMAIN_MAP.md` — business-specific terms, entities, and workflow concepts that must not become universal template concepts
+- `BUSINESS_FLOW.md` — source business workflows that downstream mirroring must replace or explicitly preserve
+- `TESTING_STRATEGY.md` — component, view, layout, module, and generated-skeleton testing conventions
 
 ---
 
@@ -346,6 +361,8 @@ Explore the repository in an order that maximizes reliable evidence.
 7. configuration, environment, and deployment files
 8. tests that reveal intended behavior
 9. targeted searches for repeated conventions and exceptions
+10. targeted searches for reusable presentation, layout, component, module, and generated-file skeleton patterns
+11. targeted searches for business-specific terms that would leak if mirrored into a different domain
 
 Prefer reading the implementation path before trusting summaries about it.
 
@@ -370,6 +387,10 @@ It may internally represent repository knowledge such as:
 - workflow
 - page
 - component
+- presentation unit
+- layout unit
+- page template
+- reusable skeleton
 - store
 - service
 - API
@@ -390,6 +411,8 @@ It may internally represent repository knowledge such as:
 - event
 - extension point
 - convention
+- business-specific term
+- boundary anti-pattern
 
 The exact implementation is not prescribed. What matters is one consistent internal model reused by the entire scan.
 
@@ -441,8 +464,89 @@ Possible expansion dimensions include:
 - permission model
 - extension points
 - testing coverage
+- standard folders created for comparable features or modules
+- standard files created for comparable features or modules
+- reusable presentation or layout units
+- ownership boundaries between shared and feature-owned code
+- business-specific names that would need replacement during project mirroring
 
 If a dimension cannot be supported from files, omit it or record it under **Gaps / Unknowns**. Never fill expansion sections with generic filler.
+
+## Standard Skeleton Discovery
+
+When evidence supports repeated project, module, feature, or UI/presentation structure, record the standard skeleton as stable memory.
+
+Capture:
+
+- required folders and the evidence showing they are required
+- optional folders and the condition that causes them to exist
+- required files per project, module, feature, route, API, model, test, or presentation unit
+- file naming patterns and extension patterns
+- generated or scaffold-like files that are safe examples for downstream templates
+- folders or files that are project-specific and must not be mirrored blindly
+
+Classify implementation details separately from architecture. For example, a concrete `<PresentationUnit>.<view_ext>` file may be evidence for a reusable presentation unit, but the reusable memory is the ownership, responsibility, naming, composition, and dependency rule unless the framework itself is part of the project contract.
+
+For every skeleton or reusable candidate that may feed a future template, classify its generation safety:
+
+- `Copy-safe` — may be copied from an approved baseline/template source because it is business-neutral, dependency-compatible, and evidenced as reusable infrastructure
+- `Stub-safe` — should be generated as a minimal placeholder/example because the structure is reusable but the implementation body contains project-specific behavior
+- `Blueprint-only` — should be documented as a rule/pattern, not generated as code, because implementation depends on target requirements
+- `Business-specific` — must be replaced, renamed, or omitted during business-neutral mirroring
+
+Record the reason and evidence for the classification. If safety is unclear, use `Stub-safe` or `Blueprint-only`; do not mark code `Copy-safe` by default.
+
+## Reusable Presentation Architecture
+
+If the project has frontend, UI, CLI screens, document templates, API presenter layers, or any other presentation surface, scan for reusable presentation architecture in framework-neutral terms.
+
+Prefer terms such as:
+
+- primitive presentation unit
+- composed presentation unit
+- feature-owned presentation unit
+- layout unit
+- page template
+- application view
+- navigation pattern
+- feedback pattern
+- form or input pattern
+- data display pattern
+- design token strategy
+- theme strategy
+
+Record ownership and dependency direction when evidenced. Examples: feature views compose shared layout units; reusable presentation units do not own business workflow logic; application views do not call transport clients directly unless that is the confirmed project convention.
+
+Also capture common starter surfaces when evidenced across features:
+
+- list/browse view pattern
+- create/edit view pattern
+- detail view pattern
+- filter/search section pattern
+- table/data-display section pattern
+- form/input section pattern
+- dialog/drawer/overlay pattern
+- empty/loading/error feedback pattern
+- route/query/state mode pattern
+
+These patterns are reusable memory only when they describe structure, dependency direction, composition, and ownership. Business labels, business constants, field names, endpoint names, and domain-specific state machines remain business-specific inputs for replacement.
+
+## Business-Neutral Mirroring Inputs
+
+Downstream `template-generator` and `project-onboarding` may use project memory to mirror engineering structure into a new project with different business processes. To support that, classify discovered facts as:
+
+- `Reusable Engineering Pattern`
+- `Standard Skeleton`
+- `Reusable Presentation Pattern`
+- `Boundary Anti-Pattern`
+- `Implementation Evidence`
+- `Framework Dependency`
+- `Replaceable Dependency`
+- `Business-Specific Concept`
+- `Business-Specific Workflow`
+- `Business-Specific Terminology`
+
+Do not decide the target business process during scanning. Only record what the source project proves and which source concepts should be replaced rather than promoted to reusable architecture.
 
 ---
 

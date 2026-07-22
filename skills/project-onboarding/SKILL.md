@@ -38,6 +38,8 @@ Variable Resolution
 ↓
 Design System Resolution
 ↓
+Business-Neutral Mirroring Resolution
+↓
 Generation Plan
 ↓
 Safe Project Generation
@@ -63,9 +65,11 @@ Always preserve these behaviors:
 
 * use approved `.template/` inputs
 * do not invent project structure
+* do not stop at parent folders when the template defines deeper folder or file skeletons
 * generate projects safely
 * apply placeholders consistently
 * rename files and folders where required
+* generate standard folders, standard files, and reusable units when the template explicitly defines them
 * run validation commands when defined or clearly supported
 * run `project-scanner` after successful project creation
 * generate `.docs/` only through `project-scanner`
@@ -97,6 +101,17 @@ If a multi-project workspace is detected:
 * identify each project boundary separately
 * validate each boundary independently
 * do not merge frontend/backend or sibling projects unless explicitly requested
+
+### 4. Business-Neutral Mirroring
+
+Use this mode when the developer wants a new project that mirrors an existing project's reusable engineering structure while replacing the source business process or domain.
+
+In this mode:
+
+* preserve the approved template's architecture, folder skeleton, file skeleton, reusable presentation architecture, validation placement, testing strategy, and extension rules
+* replace target domain, resource, route, workflow, role, permission, label, and entity variables according to `GENERATION_RULES.md`
+* do not preserve source business workflows, entities, endpoints, copy, seed data, or hardcoded business constants unless explicitly requested and supported by the template
+* validate source business leakage before reporting readiness
 
 ## Input Priority
 
@@ -140,7 +155,7 @@ After template resolution, load the blueprint in this order:
 1. `GENERATION_RULES.md`
 2. `TEMPLATE_PROFILE.md`
 3. `TEMPLATE_WORKFLOW.md`
-4. relevant supporting `.template` files required for structure, routing, API, database, deployment, and UI conventions
+4. relevant supporting `.template` files required for folder skeletons, file skeletons, structure, routing, API, database, deployment, reusable units, and UI conventions
 
 The blueprint is the engineering contract for generation. Preserve its conventions instead of replacing them with assumptions.
 
@@ -158,6 +173,7 @@ Resolve:
 * environment name if applicable
 * feature or route naming inputs if required by the template
 * service/module naming inputs if required by the template
+* target domain, resource, workflow, role, permission, or entity names if required by a mirroring template
 
 If a required input is missing, ask only for the missing critical variable.
 
@@ -182,6 +198,17 @@ Common variables include:
 <styling_framework>
 <theme_strategy>
 <component_layering_enabled>
+<target_domain>
+<target_feature_area>
+<target_business_flow>
+<target_resource_name>
+<target_entity_names>
+<target_role_names>
+<source_business_terms_to_replace>
+<shared_reusable_unit_root>
+<feature_reusable_unit_root>
+<layout_unit_root>
+<page_template_root>
 ```
 
 Apply resolved values consistently to:
@@ -191,6 +218,8 @@ Apply resolved values consistently to:
 * configuration files
 * metadata files
 * route prefixes
+* domain/resource/entity names
+* reusable unit names and paths
 * environment examples
 * generated documentation references
 
@@ -217,6 +246,51 @@ Rules:
 * preserve design-system abstraction documented by the template
 * if design-system evidence is incomplete, mark the item as `Needs Review`
 
+## Business-Neutral Mirroring Resolution
+
+If the template defines domain replacement rules, source business terms, reusable skeletons, or source business leakage checks, resolve them before creating the generation plan.
+
+Validate:
+
+* source business concepts that must be replaced
+* target business process or domain variables
+* route/resource/entity/role/permission replacement values
+* reusable engineering structure to mirror
+* reusable presentation, layout, page template, and shared utility structure to generate
+* business-specific files that must not be copied
+* source business leakage checks to run after generation
+
+Rules:
+
+* mirror engineering structure, not source business meaning
+* preserve placement and boundaries, not old domain behavior
+* preserve validation and API patterns, not old request/response resources
+* preserve reusable presentation architecture, not source feature copy or labels
+* if a required target business variable is missing, ask only for that variable
+
+## Operational Generation Rules
+
+Treat `GENERATION_RULES.md` as the executable contract for project generation. When present, load and apply these sections before falling back to prose in other `.template` files:
+
+* `folders_to_create`
+* `files_to_generate`
+* `reusable_units_to_generate`
+* `starter_feature_contracts`
+* `copy_policy`
+* domain replacement rules
+* source business leakage checks
+
+Supported generation strategies:
+
+* `empty` — create the file only when an empty file is meaningful for the project/toolchain
+* `stub` — create a minimal business-neutral implementation with placeholders defined by the template
+* `copy_from_template_source` — copy only files classified as business-neutral reusable infrastructure by `copy_policy`
+* `needs_review` — do not generate; report exactly what is missing or unsafe
+
+If a modern template does not contain these operational sections but `FOLDER_STRUCTURE.md` and `FILE_STRUCTURE.md` define clear required skeletons, build a conservative generation plan from those files and mark the generated skeleton source as `Needs Review: inferred from descriptive template files`. Do not infer implementation bodies from prose.
+
+If neither operational sections nor clear descriptive skeletons exist, stop before generation and ask the developer to rerun `template-generator` with a more complete template.
+
 ## Generation Plan
 
 Before creating or modifying files, internally produce a safe generation plan covering:
@@ -228,9 +302,17 @@ Before creating or modifying files, internally produce a safe generation plan co
 * resolved variables
 * missing variables
 * design-system decisions
+* mirroring decisions
 * files and folders to copy
+* standard folders to create
+* standard files to generate
+* reusable units to generate
+* example files allowed by the template
+* starter feature contracts to generate
+* copy/stub/omit decisions from `copy_policy`
 * files and folders to rename
 * files to update
+* source business leakage checks
 * commands to run
 * validation checks
 * expected `project-scanner` step
@@ -252,17 +334,29 @@ Resolve Variables
 ↓
 Resolve Design System
 ↓
+Resolve Business-Neutral Mirroring
+↓
 Validate Target Directory
 ↓
 Create Safe Generation Plan
 ↓
 Copy Template Skeleton
 ↓
+Generate Standard Folder Skeleton
+↓
+Generate Standard File Skeleton
+↓
+Generate Reusable Units
+↓
+Generate Starter Feature Contracts
+↓
 Apply Placeholders
 ↓
 Rename Files/Folders
 ↓
 Update Metadata
+↓
+Validate Source Business Leakage
 ↓
 Run Validation Commands
 ↓
@@ -286,6 +380,8 @@ Never:
 * ignore failed commands
 * invent missing template conventions
 * bypass design-system requirements
+* skip standard folder, file, or reusable-unit generation when `GENERATION_RULES.md` explicitly defines it
+* copy source business behavior into a different target domain without explicit template support
 
 Always:
 
@@ -293,6 +389,10 @@ Always:
 * preserve template engineering contracts
 * preserve architecture conventions
 * preserve design-system abstraction
+* preserve reusable presentation and component boundaries
+* generate every folder, file, and reusable unit explicitly required by `GENERATION_RULES.md`
+* apply `copy_policy` before copying any file from an approved baseline repository or local template source
+* report any standard skeleton or reusable unit skipped as `Needs Review` or `Blocked`
 * report changed files
 * report skipped steps
 * report failed commands
@@ -305,6 +405,9 @@ Generated project should contain:
 ```txt
 <new-project>/
 ├── source files
+├── standard folders from the template
+├── standard files from the template
+├── reusable units if defined by the template
 ├── config files
 ├── README.md
 ├── .env.example if applicable
@@ -370,6 +473,30 @@ Missing / Needs Review
 Generated Files
 - summary
 
+Standard Skeleton
+- folders generated
+- files generated
+- generation strategies used
+- skipped skeleton items and reasons
+
+Reusable Architecture
+- presentation units generated or skipped
+- layout units generated or skipped
+- page templates generated or skipped
+- shared utilities generated or skipped
+- feature-owned reusable units generated or skipped
+- copy/stub/blueprint-only decisions
+
+Starter Features
+- feature contracts generated or skipped
+- CRUD/workflow files generated
+- route/state/service/API/DTO/test skeleton status
+
+Business-Neutral Mirroring
+- source business terms replaced
+- target domain/resource/workflow values
+- source business leakage checks
+
 Design System
 - selected strategy
 - unresolved design-system items
@@ -401,18 +528,26 @@ Next Steps
 * [ ] Detect onboarding mode.
 * [ ] Resolve approved template source.
 * [ ] Read `GENERATION_RULES.md`.
+* [ ] Load operational generation sections when present.
 * [ ] Read `TEMPLATE_PROFILE.md`.
 * [ ] Read `TEMPLATE_WORKFLOW.md`.
 * [ ] Load required supporting blueprint files.
 * [ ] Map developer requirements to the template.
 * [ ] Resolve required variables.
 * [ ] Resolve design-system requirements before planning generation.
+* [ ] Resolve business-neutral mirroring requirements when present.
 * [ ] Validate target directory.
 * [ ] Build an internal safe generation plan.
 * [ ] Create new project safely.
+* [ ] Generate standard folder skeletons required by the template.
+* [ ] Generate standard file skeletons required by the template.
+* [ ] Generate reusable units required by the template.
+* [ ] Apply copy/stub/omit decisions before copying template-source files.
+* [ ] Generate starter feature contracts required by the template.
 * [ ] Apply placeholder replacement.
 * [ ] Rename files and folders.
 * [ ] Update project metadata.
+* [ ] Validate source business leakage when mirroring.
 * [ ] Run validation commands when available.
 * [ ] Run `project-scanner` to generate `.docs/`.
 * [ ] Produce the SPARK readiness report.
