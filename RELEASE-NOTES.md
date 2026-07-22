@@ -1,5 +1,15 @@
 # SPARK Release Notes
 
+## v6.3.1 (2026-07-23)
+
+### New: Business-Neutral Mirroring across project-scanner, template-generator, and project-onboarding
+
+A new end-to-end path for developers who want a new project to reuse an existing project's reusable engineering structure — folder/file skeletons, reusable presentation architecture, routing/API/validation/testing patterns — while replacing its business domain, entities, and workflows.
+
+- **`project-scanner` gains Standard Skeleton Discovery, Reusable Presentation Architecture, and Business-Neutral Mirroring Inputs sections.** It now records required/optional folders and files per module/feature/route/presentation unit, classifies each as `Copy-safe`, `Stub-safe`, `Blueprint-only`, or `Business-specific`, and tags discovered facts (`Reusable Engineering Pattern`, `Standard Skeleton`, `Business-Specific Concept`, etc.) so downstream skills know what may be mirrored versus what must be replaced. Stable anti-pattern boundaries (invalid dependency direction, misplaced business logic, unsafe shared-state ownership) are now allowed in `.docs/` when evidenced, fitting inside the existing 10-file contract — no new memory file was added.
+- **`template-generator` gains a "Business-Neutral Mirroring Blueprint" and "Standard Skeleton Projection" section**, plus a required, machine-readable shape for `GENERATION_RULES.md`: `folders_to_create`, `files_to_generate` (with `generation_strategy`: `empty`/`stub`/`copy_from_template_source`/`needs_review`), `reusable_units_to_generate` (with `copy_safety`), `starter_feature_contracts` for repeatable CRUD/workflow patterns, and `copy_policy` for classifying template-source files as `copy`/`stub`/`parameterize`/`omit`/`needs_review`. This makes generation rules operational instead of descriptive prose that `project-onboarding` had to interpret.
+- **`project-onboarding` gains a "Business-Neutral Mirroring" resolution step**, run after Design System Resolution and before the Generation Plan: preserves the approved template's architecture, skeleton, and conventions while replacing domain/resource/route/workflow/role/permission/label/entity variables per `GENERATION_RULES.md`. It now also generates standard folders, standard files, reusable units, and starter feature contracts explicitly defined by the template (rather than stopping at parent folders), and validates source business leakage before reporting readiness.
+
 ## v6.3.0 (2026-07-21)
 
 ### Not Visible to End Users: template-generator Consolidation
