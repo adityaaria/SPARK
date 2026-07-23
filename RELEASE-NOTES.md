@@ -1,5 +1,17 @@
 # SPARK Release Notes
 
+## v6.5.0 (2026-07-24)
+
+### New: Optional Rudis integration adapter
+
+Lets a project opt in to using Rudis planning artifacts (`constitution.md`, `spec.md`, `plan.md`, `tasks.md`, `research.md`, `data-model.md`, `quickstart.md`) as external evidence for SPARK skills. This does not make Rudis a dependency of SPARK, and SPARK is never embedded into Rudis.
+
+- **`spark integration install rudis`** (new `spark integration` command) writes a `.spark/integrations/rudis.json` opt-in marker (`enabled`, `mode: "read-only"`, source paths) and copies the `rudis-adapter` skill into the current project's `.agents/skills/`. Pure Node `fs` calls — no external npm package, no network access, no Rudis binary invoked or required. `--dry-run` previews both writes without touching disk.
+- **New `rudis-adapter` skill** lives under `integrations/rudis/skills/`, not `skills/` — it is never installed as a core skill, and only activates when a project explicitly enables the marker or the user asks for it directly. It treats Rudis artifacts as read-only external evidence, never writes `.docs/` or `KNOWLEDGE_RULES.md` directly, and hands off a neutral "External Knowledge Adapter Context" block to whichever SPARK skill is actually running.
+- **`using-spark` gains a routing rule** (`references/optional-integrations.md`) written entirely in generic "external knowledge adapter" terms — no Rudis-specific text was added to `using-spark/SKILL.md` or any other core skill.
+- **`project-scanner`, `knowledge-rules`, `template-generator`, and `project-onboarding` are unchanged** and stay Rudis-neutral: adapter context is supporting evidence only, and every existing approval gate (developer sign-off for `KNOWLEDGE_RULES.md` entries, `.docs/` written only by `project-scanner`, etc.) still applies.
+- **New `tests/native-installer/test-optional-integrations.sh`** asserts the isolation itself — the adapter skill is not installed as a core skill, and none of the four core skills or `using-spark/SKILL.md` ever mention Rudis by name.
+
 ## v6.4.1 (2026-07-23)
 
 ### Fixed: spark-uninstall.sh crashed with nothing to uninstall on macOS's default bash
