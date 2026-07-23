@@ -322,10 +322,7 @@ interactive_dir="$TEST_ROOT/interactive-test"
 interactive_home="$TEST_ROOT/interactive-home"
 mkdir -p "$interactive_dir" "$interactive_home/.claude" "$interactive_home/.codex"
 
-interactive_output="$(cd "$interactive_dir" && HOME="$interactive_home" SPARK_FORCE_INTERACTIVE=true bash "$INSTALLER" --dry-run <<'EOF' 2>&1 || true
-1
-EOF
-)"
+interactive_output="$(cd "$interactive_dir" && HOME="$interactive_home" SPARK_FORCE_INTERACTIVE=true bash "$INSTALLER" --dry-run <<< "1" 2>&1 || true)"
 
 prompt_count="$(printf "%s" "$interactive_output" | grep -c "Enter agent number")"
 if [ "$prompt_count" -eq 1 ]; then
