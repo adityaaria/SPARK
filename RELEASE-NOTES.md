@@ -1,5 +1,11 @@
 # SPARK Release Notes
 
+## v6.3.3 (2026-07-23)
+
+### Fixed: Skill reference routing was skippable
+
+Follow-up to the v6.3.2 consolidation. The initial reference-routing rules for `project-onboarding`, `project-scanner`, and `template-generator` were conditional ("read X when Y applies"), which let an agent talk itself out of reading a reference by judging the project or template too small, backend-only, or already familiar. All three skills' `SKILL.md` now requires every reference file unconditionally, with an explicit guardrail: do not skip a reference because the project/template looks small, backend-only, frontend-only, familiar, or simple — record it as not applicable after reading if it doesn't apply. New test `tests/native-installer/test-skill-reference-routing.sh` asserts every reference file is marked required and each skill states the no-skip guardrail.
+
 ## v6.3.2 (2026-07-23)
 
 ### Not Visible to End Users: project-onboarding, project-scanner, and template-generator Consolidation
