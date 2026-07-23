@@ -16,7 +16,7 @@ set -euo pipefail
 # Constants & Colors
 # =============================================================================
 
-VERSION="6.1.0"
+VERSION="unknown"
 readonly LOCK_FILE_NAME=".spark-lock.json"
 
 # Colors (disabled if not a TTY)
@@ -721,6 +721,81 @@ copy_file() {
   fi
 }
 
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+write_managed_marker() {
+  local agent_id="$1"
+  local target_dir="$2"
+  local marker_path="$target_dir/.spark-managed.json"
+  local timestamp
+  timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")"
+
+  register_gitignore_entry "$(gitignore_pattern_for_path "$marker_path" "file")"
+
+  local marker_agent marker_scope marker_version
+  marker_agent="$(json_escape "$agent_id")"
+  marker_scope="$(json_escape "$SCOPE")"
+  marker_version="$(json_escape "$SPARK_VERSION")"
+
+  local managed_paths=("$target_dir/skills" "$marker_path")
+
+  if [ -n "$(get_agent_hook_files "$agent_id")" ]; then
+    managed_paths+=("$target_dir/hooks")
+  fi
+
+  local manifest_files
+  manifest_files="$(get_agent_manifest_files "$agent_id")"
+  if [ -n "$manifest_files" ]; then
+    while IFS= read -r manifest_file; do
+      [ -z "$manifest_file" ] && continue
+      local manifest_basename
+      manifest_basename="$(basename "$manifest_file")"
+
+      case "$agent_id" in
+        opencode)
+          managed_paths+=("$target_dir/plugins/spark.js")
+          ;;
+        pi)
+          managed_paths+=("$target_dir/extensions/spark.ts")
+          ;;
+        *)
+          local plugin_dir="$target_dir/.${agent_id}-plugin"
+          if [ "$SCOPE" = "project" ]; then
+            plugin_dir="$(pwd)/.${agent_id}-plugin"
+          fi
+          managed_paths+=("$plugin_dir/$manifest_basename")
+          ;;
+      esac
+    done <<< "$manifest_files"
+  fi
+
+  local managed_json="" path escaped_path
+  for path in "${managed_paths[@]}"; do
+    escaped_path="$(json_escape "$path")"
+    if [ -n "$managed_json" ]; then
+      managed_json="$managed_json,
+    \"$escaped_path\""
+    else
+      managed_json="\"$escaped_path\""
+    fi
+  done
+
+  write_file_atomically "$marker_path" <<EOF
+{
+  "manager": "spark",
+  "version": "$marker_version",
+  "installed_at": "$timestamp",
+  "scope": "$marker_scope",
+  "agent": "$marker_agent",
+  "managed_paths": [
+    $managed_json
+  ]
+}
+EOF
+}
+
 # Get hook files needed for a specific agent
 get_agent_hook_files() {
   local agent_id="$1"
@@ -876,6 +951,9 @@ install_for_agent() {
   fi
 
   # 4. Print agent-specific post-install notes
+  write_managed_marker "$agent_id" "$target_dir"
+
+  # 5. Print agent-specific post-install notes
   case "$agent_id" in
     opencode)
       info "  Note: OpenCode also needs plugin registered in opencode.json."
@@ -1051,6 +1129,8 @@ uninstall_for_agent() {
   if [ -e "$target_dir/skills" ]; then
     rm -rf "$target_dir/skills"
   fi
+
+  rm -f "$target_dir/.spark-managed.json"
 
   # 2. Remove hooks
   local hook_files

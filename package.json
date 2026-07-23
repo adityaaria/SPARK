@@ -13,7 +13,7 @@
     "install": "bash bin/spark-install.sh",
     "uninstall": "bash bin/spark-uninstall.sh",
     "update": "bash bin/spark-update.sh",
-    "test": "bash tests/native-installer/test-spark-install.sh && bash tests/native-installer/test-cli-wrapper-parity.sh && bash tests/native-installer/test-spark-maintenance.sh && bash tests/native-installer/test-skill-reference-routing.sh && node --test tests/npm-installer/cli.test.mjs"
+    "test": "bash tests/native-installer/test-spark-install.sh && bash tests/native-installer/test-cli-wrapper-parity.sh && bash tests/native-installer/test-spark-maintenance.sh && bash tests/native-installer/test-skill-reference-routing.sh && bash tests/native-installer/test-enterprise-hardening.sh && node --test tests/npm-installer/cli.test.mjs"
   },
   "files": [
     "bin",
@@ -28,10 +28,12 @@
     ".pi",
     "assets",
     "README.md",
+    "SECURITY.md",
     "CLAUDE.md",
     "GEMINI.md",
     "CODE_OF_CONDUCT.md",
     "RELEASE-NOTES.md",
+    "docs/release-checklist.md",
     "docs/README.kimi.md",
     "docs/README.opencode.md",
     "docs/porting-to-a-new-harness.md",

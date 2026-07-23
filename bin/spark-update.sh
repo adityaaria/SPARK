@@ -16,7 +16,7 @@ set -euo pipefail
 # Constants & Colors
 # =============================================================================
 
-VERSION="6.1.0"
+VERSION="unknown"
 readonly LOCK_FILE_NAME=".spark-lock.json"
 
 # Colors (disabled if not a TTY)
@@ -133,6 +133,86 @@ readonly AGENT_IDS=(
   "factory"
   "pi"
 )
+
+get_target_dir() {
+  local agent_id="$1"
+  if [ "$SCOPE" = "global" ]; then
+    local home="${HOME:-$(eval echo ~)}"
+    case "$agent_id" in
+      claude|claude-code) echo "$home/.claude" ;;
+      codex|codex-cli) echo "$home/.codex" ;;
+      cursor) echo "$home/.cursor/plugins/spark" ;;
+      antigravity) echo "$home/.agy" ;;
+      gemini) echo "$home/.gemini" ;;
+      copilot) echo "$home/.copilot" ;;
+      kimi) echo "$home/.kimi" ;;
+      opencode) echo "${OPENCODE_CONFIG_DIR:-$home/.config/opencode}" ;;
+      factory) echo "$home/.factory" ;;
+      pi) echo "${PI_HOME:-$home/.pi}" ;;
+      *) echo "$home/.$agent_id" ;;
+    esac
+  else
+    case "$agent_id" in
+      claude|claude-code) echo "$(pwd)/.claude" ;;
+      codex|codex-cli) echo "$(pwd)/.codex" ;;
+      cursor) echo "$(pwd)/.cursor" ;;
+      antigravity) echo "$(pwd)/.agy" ;;
+      gemini) echo "$(pwd)/.gemini" ;;
+      copilot) echo "$(pwd)/.github" ;;
+      kimi) echo "$(pwd)/.kimi" ;;
+      opencode) echo "$(pwd)/.opencode" ;;
+      factory) echo "$(pwd)/.factory" ;;
+      pi) echo "$(pwd)/.pi" ;;
+      *) echo "$(pwd)/.$agent_id" ;;
+    esac
+  fi
+}
+
+create_update_backup() {
+  local backup_dir="$1"
+  local lock_path="$2"
+  shift 2
+
+  mkdir -p "$backup_dir/agents"
+
+  if [ -f "$lock_path" ]; then
+    cp "$lock_path" "$backup_dir/lock.json"
+  fi
+
+  local aid target safe_name
+  for aid in "$@"; do
+    target="$(get_target_dir "$aid")"
+    safe_name="$(printf '%s' "$aid" | tr '/:' '__')"
+    if [ -e "$target" ]; then
+      mkdir -p "$backup_dir/agents/$safe_name"
+      cp -RL "$target/." "$backup_dir/agents/$safe_name/"
+    fi
+  done
+}
+
+restore_update_backup() {
+  local backup_dir="$1"
+  local lock_path="$2"
+  shift 2
+
+  warn "Restoring previous SPARK installation from update backup..."
+
+  local aid target safe_name
+  for aid in "$@"; do
+    target="$(get_target_dir "$aid")"
+    safe_name="$(printf '%s' "$aid" | tr '/:' '__')"
+    rm -rf "$target"
+    if [ -e "$backup_dir/agents/$safe_name" ]; then
+      mkdir -p "$(dirname "$target")"
+      mkdir -p "$target"
+      cp -R "$backup_dir/agents/$safe_name/." "$target/"
+    fi
+  done
+
+  if [ -f "$backup_dir/lock.json" ]; then
+    cp "$backup_dir/lock.json" "$lock_path"
+  fi
+}
 
 # =============================================================================
 # Version & Repository Resolution
@@ -349,6 +429,10 @@ main() {
     exit $EXIT_SUCCESS
   fi
 
+  local backup_dir
+  backup_dir="$(mktemp -d "${TMPDIR:-/tmp}/spark-update-backup.XXXXXX")"
+  create_update_backup "$backup_dir" "$lock_path" "${target_agents[@]}"
+
   info "Step 1/2: Removing old installation..."
   if [ -f "$SPARK_ROOT/bin/spark-uninstall.sh" ]; then
     bash "$SPARK_ROOT/bin/spark-uninstall.sh" --yes ${scope_flag} --agent="$agents_arg" || true
@@ -356,6 +440,8 @@ main() {
 
   info "Step 2/2: Installing new version ($AVAILABLE_VERSION)..."
   if ! bash "$SPARK_ROOT/bin/spark-install.sh" --yes --force ${scope_flag} --agent="$agents_arg"; then
+    restore_update_backup "$backup_dir" "$lock_path" "${target_agents[@]}"
+    rm -rf "$backup_dir"
     echo ""
     error "═══════════════════════════════════════════════════════════════════════"
     error "CRITICAL: Update failed during Step 2 (installation)!"
@@ -365,9 +451,12 @@ main() {
     error "1. Check disk space and directory write permissions."
     error "2. Run manual recovery install:"
     error "     bash \"$SPARK_ROOT/bin/spark-install.sh\" --force ${scope_flag} --agent=\"$agents_arg\""
+    error "A backup restore was attempted automatically before this message."
     error "═══════════════════════════════════════════════════════════════════════"
     exit $EXIT_ERROR
   fi
+
+  rm -rf "$backup_dir"
 
   echo ""
   success "SPARK atomic update completed successfully! Upgraded to $AVAILABLE_VERSION."

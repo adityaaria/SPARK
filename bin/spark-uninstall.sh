@@ -16,7 +16,7 @@ set -euo pipefail
 # Constants & Colors
 # =============================================================================
 
-VERSION="6.1.0"
+VERSION="unknown"
 readonly LOCK_FILE_NAME=".spark-lock.json"
 
 # Colors (disabled if not a TTY)
@@ -302,6 +302,7 @@ uninstall_for_agent() {
 
   # 1. Remove skills directory/symlink
   remove_file_or_dir "$target_dir/skills" "skills directory/symlink"
+  remove_file_or_dir "$target_dir/.spark-managed.json" "managed marker"
 
   # 2. Remove hooks
   case "$agent_id" in
