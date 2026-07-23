@@ -1,5 +1,17 @@
 # SPARK Release Notes
 
+## v6.4.0 (2026-07-23)
+
+### New: Enterprise Hardening (CI gate, managed ownership marker, rollback-safe update)
+
+- **New `.github/workflows/ci.yml`** runs on every PR and every push to `dev`/`main`: `npm test`, `bash tests/shell-lint/test-lint-shell.sh`, the new enterprise hardening checks below, and `npm pack --dry-run` to catch a broken published package before it ships.
+- **Installer writes a per-agent `.spark-managed.json` ownership marker** (`manager`, `version`, `installed_at`, `scope`, `agent`, `managed_paths`) into each agent's target directory, so it's unambiguous which files SPARK owns and can safely remove. Uninstall deletes the marker; update carries the new version forward.
+- **`spark-update.sh` is now rollback-safe.** Before reinstalling, it snapshots the previous skills, hooks, manifests, marker, and lockfile to a temp backup; if the install step of an update fails, it automatically restores that snapshot instead of leaving a partially-updated, possibly broken install. The manual-recovery error message now also notes that an automatic restore was attempted.
+- **Fixed a version-drift bug**: `bin/spark-install.sh`, `spark-uninstall.sh`, and `spark-update.sh` all carried a hardcoded `VERSION="6.1.0"` fallback that never tracked `package.json`. It's now `VERSION="unknown"`, immediately overwritten by the real `SPARK_VERSION` resolved from `package.json` at runtime.
+- **New `SECURITY.md`**: supported-versions policy, private vulnerability reporting expectations, secret-handling rules (no secrets in tracked files or installer output), local-server binding expectations (loopback by default, per-session tokens), and supply-chain expectations for publishing.
+- **New `docs/release-checklist.md`**: required gates (tests, lint, hardening checks, `npm pack --dry-run`, version-sync check), supply-chain steps (clean worktree, signed tags, provenance), and a human-review step (diff review, install/update/rollback verification) to run before every publish.
+- **New `tests/native-installer/test-enterprise-hardening.sh`** (27 checks) verifies the CI gate, version governance across all manifests, `SECURITY.md`/checklist content, the managed marker's fields end-to-end on a real install, and a full simulated install-failure → automatic rollback cycle.
+
 ## v6.3.3 (2026-07-23)
 
 ### Fixed: Skill reference routing was skippable
