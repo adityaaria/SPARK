@@ -17,14 +17,16 @@ This skill is a **Template Blueprint Builder**. The generated template must be a
 
 > spark template 🧩 Using template-generator to build reusable project blueprint
 
-## Reference Routing
+## Required References
 
-Read the relevant references before generating `.template/`:
+Before generating `.template/`, you MUST read every reference file in this skill:
 
-- Always read `references/input-and-output.md`.
-- Always read `references/blueprint-pipeline.md`.
-- Read `references/generation-contracts.md` when the template must drive `project-onboarding`, generate skeletons, copy reusable units, or produce starter features.
-- Read `references/reusable-ui-and-behavior.md` when `.docs` or Knowledge Rules mention reusable UI, design systems, visual patterns, behavior rules, copy-safe units, or page archetypes.
+- MUST read `references/input-and-output.md`.
+- MUST read `references/blueprint-pipeline.md`.
+- MUST read `references/generation-contracts.md`.
+- MUST read `references/reusable-ui-and-behavior.md`.
+
+Do not skip required references because the source memory looks small, backend-only, frontend-only, familiar, or simple. If a reference section does not apply, record it as not applicable after reading it.
 
 Do not scan raw source code unless `.docs` is incomplete, contradictory, or missing critical evidence needed to avoid an unsafe template.
 
@@ -85,7 +87,7 @@ Physically create `.template/` and write the files to disk. Do not create other 
 
 1. Read `.docs/` and validate the required memory set.
 2. Read `docs/spark/rules/KNOWLEDGE_RULES.md` if present.
-3. Read relevant references from `references/`.
+3. Read every required reference from `references/`.
 4. Build one internal blueprint from stable memory plus rule overlay.
 5. Generalize business-specific names into placeholders.
 6. Classify technology, dependency, copy safety, and uncertainty.
@@ -106,8 +108,8 @@ Physically create `.template/` and write the files to disk. Do not create other 
 - [ ] Announce skill usage.
 - [ ] Read `references/input-and-output.md`.
 - [ ] Read `references/blueprint-pipeline.md`.
-- [ ] Read `references/generation-contracts.md` if onboarding needs executable skeleton/copy/starter rules.
-- [ ] Read `references/reusable-ui-and-behavior.md` if reusable UI, design-system, behavior, copy-safe units, or page archetypes are relevant.
+- [ ] Read `references/generation-contracts.md`.
+- [ ] Read `references/reusable-ui-and-behavior.md`.
 - [ ] Read the complete `.docs` memory set.
 - [ ] Read `docs/spark/rules/KNOWLEDGE_RULES.md` if present.
 - [ ] Generate exactly the 10 `.template` files.

@@ -19,16 +19,16 @@ This skill is a **Stable Project Memory Builder**, not an intelligence artifact 
 
 You must physically create `.docs/` and write memory files to disk. Never only print generated memory in chat.
 
-## Reference Routing
+## Required References
 
-Read the relevant references before scanning:
+Before scanning, you MUST read every reference file in this skill:
 
-- Always read `references/memory-contract.md`.
-- Read `references/evidence-and-confidence.md` before evaluating facts, conflicts, or absence.
-- Read `references/discovery-workflow.md` before repository exploration.
-- Read `references/reusable-and-behavior.md` when the project has frontend/UI, CLI screens, document templates, generated skeletons, reusable components, or mirroring/template goals.
+- MUST read `references/memory-contract.md`.
+- MUST read `references/evidence-and-confidence.md`.
+- MUST read `references/discovery-workflow.md`.
+- MUST read `references/reusable-and-behavior.md`.
 
-Do not load unrelated references if the project surface does not need them.
+Do not skip required references because the project looks small, backend-only, frontend-only, familiar, or simple. If a reference section does not apply, record it as not applicable after reading it.
 
 ## Core Contract
 
@@ -96,7 +96,7 @@ Do not turn observed behavior into a prescriptive rule inside `.docs`. If the de
 ## Execution Flow
 
 1. Identify project roots and workspace boundaries.
-2. Read relevant references from `references/`.
+2. Read every required reference from `references/`.
 3. Explore repository evidence in priority order.
 4. Build one internal repository model.
 5. Expand durable facts into reusable project knowledge.
@@ -120,7 +120,7 @@ Do not turn observed behavior into a prescriptive rule inside `.docs`. If the de
 - [ ] Read `references/memory-contract.md`.
 - [ ] Read `references/evidence-and-confidence.md`.
 - [ ] Read `references/discovery-workflow.md`.
-- [ ] Read `references/reusable-and-behavior.md` if reusable UI, behavior, skeleton, or mirroring knowledge is relevant.
+- [ ] Read `references/reusable-and-behavior.md`.
 - [ ] Detect valid project root(s).
 - [ ] Build one internal model per project root.
 - [ ] Write exactly the 10 `.docs` files per valid project root.

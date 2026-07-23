@@ -17,15 +17,15 @@ It may consume an approved custom template directory when the developer provides
 
 > spark onboarding 🚀 Using project-onboarding to generate project from template
 
-## Reference Routing
+## Required References
 
-Read the relevant references before generation:
+Before generation, you MUST read every reference file in this skill:
 
-- Always read `references/template-resolution.md`.
-- Always read `references/generation-execution.md`.
-- Read `references/mirroring-and-behavior.md` when using business-neutral mirroring, reusable UI, behavior contracts, page archetypes, copy-safe units, or custom templates.
+- MUST read `references/template-resolution.md`.
+- MUST read `references/generation-execution.md`.
+- MUST read `references/mirroring-and-behavior.md`.
 
-Do not load unrelated references if the template does not define those surfaces.
+Do not skip required references because the template looks small, backend-only, frontend-only, familiar, or simple. If a reference section does not apply, record it as not applicable after reading it.
 
 ## Core Contract
 
@@ -127,7 +127,7 @@ After onboarding, include:
 - [ ] Announce skill usage.
 - [ ] Read `references/template-resolution.md`.
 - [ ] Read `references/generation-execution.md`.
-- [ ] Read `references/mirroring-and-behavior.md` if mirroring, reusable UI, behavior contracts, page archetypes, copy-safe units, or custom templates are relevant.
+- [ ] Read `references/mirroring-and-behavior.md`.
 - [ ] Detect onboarding mode.
 - [ ] Resolve approved template source.
 - [ ] Load `GENERATION_RULES.md`, `TEMPLATE_PROFILE.md`, and `TEMPLATE_WORKFLOW.md`.
