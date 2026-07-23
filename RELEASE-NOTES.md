@@ -1,5 +1,15 @@
 # SPARK Release Notes
 
+## v6.4.1 (2026-07-23)
+
+### Fixed: spark-uninstall.sh crashed with nothing to uninstall on macOS's default bash
+
+`bash bin/spark-uninstall.sh` (and `npx spark uninstall`) crashed with `TO_REMOVE_AGENTS[@]: unbound variable` instead of printing "No SPARK installations found" whenever no agent was detected — e.g. uninstalling in an environment where nothing was ever installed. Root cause: expanding an empty array with `"${arr[@]}"` under `set -u` is an unbound-variable error on bash < 4.4, which is still the default `/bin/bash` shipped on macOS; a duplicate-removal step also reassigned the agent list via `"${unique_agents[@]:-}"`, which turns a genuinely empty array into a one-element array holding an empty string instead of staying empty, corrupting the later "nothing to remove" check. Both are now length-guarded before iterating/reassigning. Only surfaced once the v6.4.0 CI gate started running the installer test suite against a real clean environment instead of a developer machine that already had agents installed.
+
+### Fixed: misleading "Newer version available" warning
+
+`spark-install.sh` and `spark-update.sh` warned "Newer version available: X" whenever the npm registry's published version merely *differed* from the local one — including right after bumping `package.json` locally but before publishing, when the local version is actually ahead. Both scripts now do a real version comparison (`version_gt`) instead of a simple inequality check, so the warning only fires when the registry version is genuinely newer.
+
 ## v6.4.0 (2026-07-23)
 
 ### New: Enterprise Hardening (CI gate, managed ownership marker, rollback-safe update)
