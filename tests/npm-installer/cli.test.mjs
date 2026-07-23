@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { readFile, mkdtemp, mkdir, rm, stat } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +22,23 @@ function runCli(args, env = {}) {
     env: { ...process.env, ...env },
     encoding: 'utf8',
   });
+}
+
+function runCliInCwd(args, cwd, env = {}) {
+  return spawnSync(process.execPath, [binPath, ...args], {
+    cwd,
+    env: { ...process.env, ...env },
+    encoding: 'utf8',
+  });
+}
+
+async function exists(path) {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // A clean CI runner has no ~/.claude, ~/.codex, etc., so autodetection
@@ -108,4 +125,40 @@ test('CLI forwards update command to spark-update.sh', () => {
 
   // Exits with 0 or 1 depending on whether lockfile exists, but output must match Updater header
   assert.match(result.stdout, /SPARK Native Updater/i);
+});
+
+test('CLI dry-runs optional Rudis integration marker creation', async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), 'spark-rudis-dry-run-'));
+
+  try {
+    const result = runCliInCwd(['integration', 'install', 'rudis', '--dry-run'], projectDir);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /SPARK Integration/i);
+    assert.match(result.stdout, /Would write .*\.spark\/integrations\/rudis\.json/i);
+    assert.equal(await exists(join(projectDir, '.spark', 'integrations', 'rudis.json')), false);
+    assert.equal(await exists(join(projectDir, '.agents', 'skills', 'rudis-adapter', 'SKILL.md')), false);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('CLI installs optional Rudis integration marker without requiring Rudis artifacts', async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), 'spark-rudis-install-'));
+
+  try {
+    const result = runCliInCwd(['integration', 'install', 'rudis'], projectDir);
+
+    assert.equal(result.status, 0, result.stderr);
+    const markerPath = join(projectDir, '.spark', 'integrations', 'rudis.json');
+    const marker = JSON.parse(await readFile(markerPath, 'utf8'));
+
+    assert.equal(marker.enabled, true);
+    assert.equal(marker.mode, 'read-only');
+    assert.equal(marker.constitution, '.rudis/memory/constitution.md');
+    assert.equal(marker.specs, 'specs');
+    assert.equal(await exists(join(projectDir, '.agents', 'skills', 'rudis-adapter', 'SKILL.md')), true);
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
 });

@@ -78,6 +78,10 @@ Process skills (brainstorming, systematic-debugging) go first — they determine
 "Add this feature" → if `.docs/` exists, use enhancement; otherwise use brainstorming directly.
 "Review/audit this code" → if `.docs/` exists and the request is a broader quality/architecture/security check, use audit; for a review of a specific diff or before merging, use requesting-code-review instead.
 
+## Optional Integrations
+
+If the user asks for an enabled external integration, or the project has an enabled marker under `.spark/integrations/`, load the matching adapter skill before the downstream SPARK skill. Adapter routing is opt-in and read-only by default. Always read `references/optional-integrations.md` before using an adapter.
+
 ## Skill Types
 
 Rigid skills (TDD, systematic-debugging): follow exactly, don't adapt away discipline. Flexible skills (patterns): adapt to context. The skill tells you which.

@@ -24,6 +24,7 @@ export function printHelp() {
   printLine(labelValue('Usage', 'npx @adityaaria/spark install [options]'));
   printLine('');
   printMuted('Wraps the native SPARK installer (bin/spark-install.sh).');
+  printMuted('Optional integrations: npx @adityaaria/spark integration install rudis');
   printLine('');
   printLine(labelValue('Options', '-g, --global    Install to global agent config (~/.agents/skills/)'));
   printLine(labelValue('       ', '--force         Re-install even if already installed'));

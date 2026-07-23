@@ -1,5 +1,6 @@
 import { printHelp, printLine } from './output.js';
 import { runInstall } from './install.js';
+import { runIntegration } from './integration.js';
 
 export async function run(argv = [], env = process.env) {
   if (argv.length === 0 || argv[0] === '--help' || argv[0] === '-h' || argv[0] === 'help') {
@@ -29,6 +30,11 @@ export async function run(argv = [], env = process.env) {
   if (command === 'dashboard' || command === 'ui') {
     const { startDashboard } = await import('../dashboard/server.js');
     startDashboard();
+    return;
+  }
+
+  if (command === 'integration') {
+    await runIntegration(args);
     return;
   }
 
