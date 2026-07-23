@@ -1,6 +1,6 @@
 {
   "name": "@adityaaria/spark",
-  "version": "6.3.1",
+  "version": "6.3.2",
   "description": "SPARK skills and runtime bootstrap for coding agents",
   "type": "module",
   "publishConfig": {
@@ -13,7 +13,7 @@
     "install": "bash bin/spark-install.sh",
     "uninstall": "bash bin/spark-uninstall.sh",
     "update": "bash bin/spark-update.sh",
-    "test": "bash tests/native-installer/test-spark-install.sh && bash tests/native-installer/test-cli-wrapper-parity.sh && bash tests/native-installer/test-spark-maintenance.sh && node --test tests/npm-installer/cli.test.mjs"
+    "test": "bash tests/native-installer/test-spark-install.sh && bash tests/native-installer/test-cli-wrapper-parity.sh && bash tests/native-installer/test-spark-maintenance.sh && bash tests/native-installer/test-skill-reference-routing.sh && node --test tests/npm-installer/cli.test.mjs"
   },
   "files": [
     "bin",

@@ -1,5 +1,15 @@
 # SPARK Release Notes
 
+## v6.3.2 (2026-07-23)
+
+### Not Visible to End Users: project-onboarding, project-scanner, and template-generator Consolidation
+
+Splits each skill's `SKILL.md` into a slim orchestrator plus topic-scoped reference files under a new `references/` folder, following the pattern already used by `using-spark`. `project-scanner/SKILL.md` cut from ~5441 to ~662 core words (4 new reference files: discovery workflow, evidence and confidence, memory contract, reusable and behavior). `project-onboarding/SKILL.md` cut from ~2198 to ~676 words (3 new reference files: template resolution, generation execution, mirroring and behavior). `template-generator/SKILL.md` cut from ~2711 to ~642 words (4 new reference files: blueprint pipeline, input and output, generation contracts, reusable UI and behavior). Each `SKILL.md` now names which references to read and when, so an agent loads only the sections relevant to the current task instead of the full prior file. No technical substance was removed — only reorganized out of the always-loaded main file.
+
+### New: knowledge-rules downstream consumption guidance
+
+`knowledge-rules` now documents how `template-generator` and `project-onboarding` may consume `KNOWLEDGE_RULES.md` — translating confirmed rules into generation contracts and validating generated output against them — while keeping rules themselves prescriptive and project-scoped rather than duplicating template instructions. Also adds guidance for proposing behavior rules (e.g. loading/empty/error states, view-to-transport-client boundaries) and reading additional `.docs/` files (`ARCHITECTURE_GRAPH.md`, `WORKSPACE_MAP.md`, `FEATURE_MAP.md`, `TESTING_STRATEGY.md`, `DOMAIN_MAP.md`) as auto-detect input.
+
 ## v6.3.1 (2026-07-23)
 
 ### New: Business-Neutral Mirroring across project-scanner, template-generator, and project-onboarding
