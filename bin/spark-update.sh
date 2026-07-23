@@ -271,6 +271,24 @@ run_with_timeout_capture() {
   rm -f "$tmp_out"
 }
 
+# Returns success (0) if dot-separated numeric version $1 is strictly
+# greater than $2. Missing trailing fields compare as 0 (e.g. "6.4" > "6.3.9").
+version_gt() {
+  local a="$1" b="$2"
+  local IFS=.
+  local -a av=($a) bv=($b)
+  local i max ai bi
+  max=${#av[@]}
+  [ "${#bv[@]}" -gt "$max" ] && max=${#bv[@]}
+  for ((i = 0; i < max; i++)); do
+    ai="${av[i]:-0}"; ai="${ai//[^0-9]/}"; ai="${ai:-0}"
+    bi="${bv[i]:-0}"; bi="${bi//[^0-9]/}"; bi="${bi:-0}"
+    if [ "$ai" -gt "$bi" ]; then return 0; fi
+    if [ "$ai" -lt "$bi" ]; then return 1; fi
+  done
+  return 1
+}
+
 check_registry_version() {
   if ! command -v npm >/dev/null 2>&1; then
     return 0
@@ -278,7 +296,7 @@ check_registry_version() {
 
   local latest
   latest="$(run_with_timeout_capture 5 npm show @adityaaria/spark version | tr -d '\r\n ' || echo "")"
-  if [ -n "$latest" ] && [ "$AVAILABLE_VERSION" != "$latest" ] && [ "$AVAILABLE_VERSION" != "unknown" ]; then
+  if [ -n "$latest" ] && [ "$AVAILABLE_VERSION" != "unknown" ] && version_gt "$latest" "$AVAILABLE_VERSION"; then
     warn "Newer npm package available: $latest"
     printf "    Run: npx @adityaaria/spark@latest update\n" >&2
   fi

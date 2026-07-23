@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, mkdir, rm } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import test from 'node:test';
+import { tmpdir } from 'node:os';
+import test, { before, after } from 'node:test';
 import { buildCommandHeader } from '../../src/cli/output.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -22,6 +23,24 @@ function runCli(args, env = {}) {
     encoding: 'utf8',
   });
 }
+
+// A clean CI runner has no ~/.claude, ~/.codex, etc., so autodetection
+// finds no coding agent and the installer exits non-zero. Point HOME at
+// a fixture with a fake ~/.claude so agent autodetection succeeds the
+// same way it would on a developer machine that already has an agent installed.
+let fakeHome;
+
+before(async () => {
+  fakeHome = await mkdtemp(join(tmpdir(), 'spark-cli-test-'));
+  await mkdir(join(fakeHome, '.claude'), { recursive: true });
+  // Seed a real global install so the uninstall/update dry-run tests below
+  // have something to detect — a clean CI runner starts with nothing installed.
+  runCli(['install', '-g', '--yes'], { HOME: fakeHome });
+});
+
+after(async () => {
+  if (fakeHome) await rm(fakeHome, { recursive: true, force: true });
+});
 
 test('package.json exposes the CLI binary', async () => {
   const pkg = await readPackageJson();
@@ -58,7 +77,7 @@ test('CLI command header is center-aligned when rendered as plain text', () => {
 });
 
 test('CLI dry-run forwards to spark-install.sh without touching filesystem', () => {
-  const result = runCli(['install', '--dry-run']);
+  const result = runCli(['install', '--dry-run'], { HOME: fakeHome });
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /SPARK Native Installer/i);
@@ -67,7 +86,9 @@ test('CLI dry-run forwards to spark-install.sh without touching filesystem', () 
 });
 
 test('CLI forwards flags like -g to spark-install.sh', () => {
-  const result = runCli(['install', '-g', '--dry-run']);
+  // --force because before() already seeded a real global install in fakeHome;
+  // without it the installer short-circuits with "Already up to date."
+  const result = runCli(['install', '-g', '--dry-run', '--force'], { HOME: fakeHome });
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /SPARK Native Installer/i);
@@ -75,7 +96,7 @@ test('CLI forwards flags like -g to spark-install.sh', () => {
 });
 
 test('CLI forwards uninstall command to spark-uninstall.sh', () => {
-  const result = runCli(['uninstall', '--dry-run', '-g']);
+  const result = runCli(['uninstall', '--dry-run', '-g'], { HOME: fakeHome });
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /SPARK Native Uninstaller/i);
@@ -83,7 +104,7 @@ test('CLI forwards uninstall command to spark-uninstall.sh', () => {
 });
 
 test('CLI forwards update command to spark-update.sh', () => {
-  const result = runCli(['update', '--dry-run', '-g']);
+  const result = runCli(['update', '--dry-run', '-g'], { HOME: fakeHome });
 
   // Exits with 0 or 1 depending on whether lockfile exists, but output must match Updater header
   assert.match(result.stdout, /SPARK Native Updater/i);

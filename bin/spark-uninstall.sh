@@ -259,16 +259,28 @@ discover_installed_agents() {
     done
   fi
 
-  # Remove duplicates if any
+  # Remove duplicates if any.
+  # Every "${arr[@]}" expansion below is guarded by a length check first:
+  # under set -u, expanding an empty array with "${arr[@]}" is an unbound-
+  # variable error on bash < 4.4 (still the default /bin/bash on macOS),
+  # and "${arr[@]:-}" silently turns an empty array into a one-element
+  # array holding an empty string rather than staying empty.
   local unique_agents=()
-  for aid in "${TO_REMOVE_AGENTS[@]}"; do
-    local dup=false
-    for u in "${unique_agents[@]:-}"; do
-      if [ "$u" = "$aid" ]; then dup=true; break; fi
+  if [ ${#TO_REMOVE_AGENTS[@]} -gt 0 ]; then
+    for aid in "${TO_REMOVE_AGENTS[@]}"; do
+      local dup=false
+      if [ ${#unique_agents[@]} -gt 0 ]; then
+        for u in "${unique_agents[@]}"; do
+          if [ "$u" = "$aid" ]; then dup=true; break; fi
+        done
+      fi
+      if ! $dup; then unique_agents+=("$aid"); fi
     done
-    if ! $dup; then unique_agents+=("$aid"); fi
-  done
-  TO_REMOVE_AGENTS=("${unique_agents[@]:-}")
+  fi
+  TO_REMOVE_AGENTS=()
+  if [ ${#unique_agents[@]} -gt 0 ]; then
+    TO_REMOVE_AGENTS=("${unique_agents[@]}")
+  fi
 }
 
 # =============================================================================
