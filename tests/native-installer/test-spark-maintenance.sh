@@ -176,6 +176,7 @@ git -C "$seed_repo" add . >/dev/null 2>&1
 git -C "$seed_repo" commit -q -m "base"
 git -C "$seed_repo" remote add origin "$origin_repo"
 git -C "$seed_repo" push -q origin main
+git --git-dir="$origin_repo" symbolic-ref HEAD refs/heads/main
 
 git clone -q "$origin_repo" "$installed_repo"
 old_commit="$(git -C "$installed_repo" rev-parse HEAD)"

@@ -17,6 +17,8 @@ This fills a gap `project-scanner` leaves by design: that skill finds legacy tra
 
 **Not to be confused with `.docs/` or `docs/spark/plans/`:** `.docs/` describes what the codebase currently is. `docs/spark/plans/` describes planned work for one feature. `docs/spark/rules/KNOWLEDGE_RULES.md` prescribes what code *must* or *should* do, regardless of feature or scan. Do not write rule entries into `.docs/`, and do not write project-memory facts into `KNOWLEDGE_RULES.md`.
 
+`KNOWLEDGE_RULES.md` is also the durable prescriptive input for downstream template creation and project onboarding. `template-generator` may project confirmed rules into generation contracts, and `project-onboarding` may use generated template contracts to validate scaffolded output. This does not make rules a template: rules say what must be true; templates say what to generate.
+
 ---
 
 # Output Contract
@@ -40,6 +42,7 @@ Every entry follows this exact format (parseable by both agents and the SPARK da
 - `Severity: Must` is a hard constraint; `Should` is a strong preference.
 - `Enforced-Via: linter:<tool>:<rule-id>` means the rule has a native equivalent already active in the project's linter config (e.g. `linter:eslint:@typescript-eslint/no-explicit-any`) — violations are caught in CI, not just at agent-review time.
 - `Enforced-Via: agent-review` means enforcement lives entirely with `audit`/`bug-fix`/`enhancement` reading this file — used when a rule is semantic/project-specific and has no mechanical linter equivalent (e.g. "no hardcoded values — use named constants," which requires business context a linter can't have).
+- Keep the entry format stable for dashboard parsing. If a rule needs extra implementation detail, put that detail in `Fix Guidance` instead of adding custom fields.
 
 When creating the file for the first time, write this header before the first entry so a developer opening it by hand understands the format:
 
@@ -64,12 +67,24 @@ delete or overwrite a manual entry.
 # Auto-Detect Mode
 
 1. Read `.docs/PROJECT_PROFILE.md` first — especially its "Coding Convention" and "Validation Convention" content, if present — as a starting point for what conventions already have evidence behind them.
-2. Scan the repository for patterns that are **consistent across the whole codebase or a clear majority**, not a single file. Apply an evidence bar equivalent to `project-scanner`'s Confidence Engine:
+2. Read other relevant `.docs/` files when the rule concerns architecture, UI behavior, page composition, reusable units, API boundaries, testing, or domain ownership. Typical sources:
+   - `.docs/ARCHITECTURE_GRAPH.md` for dependency direction and boundary rules
+   - `.docs/WORKSPACE_MAP.md` for folder ownership and reusable unit locations
+   - `.docs/FEATURE_MAP.md` for page archetypes, CRUD composition, state handling, and feature-owned sections
+   - `.docs/TESTING_STRATEGY.md` for required behavior tests and generated-skeleton test conventions
+   - `.docs/DOMAIN_MAP.md` for business-specific terms that must not leak into reusable rules
+3. Scan the repository for patterns that are **consistent across the whole codebase or a clear majority**, not a single file. Apply an evidence bar equivalent to `project-scanner`'s Confidence Engine:
    - Treat a pattern as **Confirmed from Code** only when it holds project-wide with no meaningful exceptions (e.g. `tsconfig.json` has `strict: true` and a repo-wide search finds zero uses of `any`) — this is what may become a proposed rule.
    - Treat a pattern found in only some files as **Unverified Pattern** — do not propose a rule from it.
-3. Typical proposals: strict TypeScript + zero `any` usage → propose "No `any` type"; a linter config that already forbids `console.log` → propose a matching rule so it's tracked in `KNOWLEDGE_RULES.md` too, not just the linter config.
-4. **Before writing anything, present every proposed rule to the developer for confirmation** — title, severity, rationale, detection pattern. This is different from `.docs/` project memory, which is descriptive and safe to write directly; a rule is prescriptive and must be opted into.
-5. Only write entries the developer confirms, with `Source: auto-detected`, `Added`/`Last-Verified` set to today.
+4. Typical proposals: strict TypeScript + zero `any` usage → propose "No `any` type"; a linter config that already forbids `console.log` → propose a matching rule so it's tracked in `KNOWLEDGE_RULES.md` too, not just the linter config.
+5. Behavior rules may be proposed when repeated evidence or explicit developer direction supports them. Examples:
+   - submit or destructive actions must use confirmation and loading state
+   - data-display units must provide loading, empty, and error states
+   - CRUD list pages must compose filter/search and result display through separate sections
+   - views must not call transport clients directly
+   - reusable UI must not import feature-owned DTOs, stores, services, or domain constants
+6. **Before writing anything, present every proposed rule to the developer for confirmation** — title, severity, rationale, detection pattern. This is different from `.docs/` project memory, which is descriptive and safe to write directly; a rule is prescriptive and must be opted into.
+7. Only write entries the developer confirms, with `Source: auto-detected`, `Added`/`Last-Verified` set to today.
 
 ---
 
@@ -80,6 +95,24 @@ A developer can request a rule directly in natural language — e.g. "no `watch`
 1. Translate the request into the `RULE-xxx` format above, with `Source: manual`.
 2. Draft `Rationale` from what the developer said (or ask if it's ambiguous) and `Fix Guidance` for how to resolve a violation.
 3. Show the drafted entry to the developer and confirm before appending it to the file.
+
+Manual behavior rules are valid even when the current codebase does not yet implement them everywhere. Mark their `Source` as `manual`, set `Rationale` from the developer decision, and make `Fix Guidance` describe the reusable unit or page archetype that should own the behavior.
+
+---
+
+# Downstream Consumption
+
+Rules remain prescriptive; they do not generate code by themselves.
+
+When other skills consume `KNOWLEDGE_RULES.md`:
+
+- `template-generator` may translate rules into `behavior_contracts`, `page_archetypes`, validation checks, and anti-pattern sections in `.template/`.
+- `project-onboarding` may validate generated output against behavior contracts that came from the template.
+- `audit`, `bug-fix`, and `enhancement` should flag violations during implementation and review.
+
+Do not duplicate full template instructions into `KNOWLEDGE_RULES.md`. A good rule is short and durable; the template owns file paths, copy/stub strategy, archetype structure, and generated examples.
+
+Rule content should stay project-scoped. Organization-specific rules are appropriate inside that organization's project or custom template repository, but not in SPARK core skills.
 
 ---
 
@@ -109,9 +142,11 @@ Re-scanning (auto-detect mode run again on an existing file) follows strict rule
 
 - [ ] Announce skill usage.
 - [ ] Read `.docs/PROJECT_PROFILE.md` if present (Coding/Validation Convention sections).
+- [ ] Read other relevant `.docs/` files for architecture, workspace, feature, domain, or testing rules.
 - [ ] For auto-detect: only propose rules meeting the Confirmed-from-Code evidence bar; present all proposals for confirmation before writing any.
 - [ ] For manual requests: translate to `RULE-xxx` format and confirm before writing.
 - [ ] Run Lint-Mapping on every drafted rule; never edit a linter config file without per-change confirmation.
+- [ ] For behavior rules, keep the rule prescriptive and put generated file details in the template, not in `KNOWLEDGE_RULES.md`.
 - [ ] On refresh: never touch `Source: manual` entries; only add/update `auto-detected` ones, with confirmation before removing any.
 - [ ] Write the "About This File" header when creating the file for the first time.
 - [ ] Confirm every written entry matches the exact `RULE-xxx` field format.
