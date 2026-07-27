@@ -36,6 +36,8 @@ Always:
 - keep consumption read-only
 - load only bounded, relevant files
 - normalize findings into neutral SPARK context before handing them to another skill
+- convert `specs/<feature>/tasks.md` into a bounded **Rudis Task Intake** when the user's request is about continuing, planning, or implementing Rudis tasks
+- hand **Rudis Task Intake** to `writing-plans` when SPARK needs to turn Rudis task intent into a detailed implementation plan
 - preserve SPARK approval gates, especially for `knowledge-rules`
 
 Never:
@@ -44,6 +46,7 @@ Never:
 - copy Rudis documents verbatim into `.docs/`
 - create `KNOWLEDGE_RULES.md` entries without developer approval
 - run Rudis commands as part of this adapter
+- execute Rudis `tasks.md` directly as a SPARK plan
 - infer project structure from Rudis plans when source code contradicts it
 
 ## Checklist
@@ -52,4 +55,5 @@ Never:
 - [ ] Read `references/adapter-contract.md`.
 - [ ] Read configured Rudis artifacts in bounded scope.
 - [ ] Produce External Knowledge Adapter Context.
+- [ ] Produce Rudis Task Intake when `tasks.md` is relevant.
 - [ ] Hand the neutral context to the requested SPARK skill.

@@ -69,6 +69,30 @@ spark integration install rudis
 -> template-generator and project-onboarding consume SPARK contracts as usual
 ```
 
+Rudis task continuation with SPARK:
+
+```text
+spark integration install rudis
+-> rudis-adapter reads specs/<feature>/tasks.md
+-> rudis-adapter emits Rudis Task Intake
+-> writing-plans expands Rudis task intent into a SPARK implementation plan
+-> subagent-driven-development or executing-plans performs TDD, review, and verification
+```
+
+In this flow, Rudis owns the feature intent and high-level task order. SPARK owns detailed implementation planning and execution discipline. Keep Rudis task IDs in the SPARK plan so work can be traced back to the original `tasks.md`.
+
+Example request:
+
+```text
+Continue my Rudis tasks with SPARK.
+```
+
+If the project has multiple feature folders, name the one you want:
+
+```text
+Continue my Rudis tasks for specs/001-invoice with SPARK.
+```
+
 New generated project:
 
 ```text
@@ -85,3 +109,4 @@ project-onboarding
 - `KNOWLEDGE_RULES.md` still requires developer approval for every rule.
 - `template-generator` and `project-onboarding` still depend on SPARK `.docs/`, approved rules, and `.template/` contracts.
 - Rudis task lists are implementation guidance, not stable architecture memory.
+- Rudis `tasks.md` is not executed directly by SPARK; it is normalized into Rudis Task Intake and expanded by `writing-plans`.

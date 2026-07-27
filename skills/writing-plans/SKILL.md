@@ -38,6 +38,12 @@ Before defining tasks, map out which files will be created or modified and what 
 
 This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
 
+## Optional External Task Intake
+
+If the planning input includes an **external task intake** block from an optional integration, treat it as supporting task intent, not as an executable plan. Preserve any source task IDs for traceability in task titles or notes, then expand each item into SPARK's normal plan format with exact files to read or edit, concrete tests, implementation contracts, verification commands, and review gates.
+
+Keep the core planning flow neutral: do not depend on the external tool, do not execute external task lists directly, and let source code, project memory, and approved rules override external task intent when they conflict.
+
 ## Task Right-Sizing
 
 A task is the smallest unit that carries its own test cycle and is worth a

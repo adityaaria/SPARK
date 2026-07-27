@@ -1,5 +1,17 @@
 # SPARK Release Notes
 
+## v6.6.0 (2026-07-27)
+
+### New: Rudis Task Intake for the optional Rudis adapter
+
+Extends the optional `rudis-adapter` integration (added in v6.5.0) so it can normalize a Rudis `specs/<feature>/tasks.md` checklist into task intent that `writing-plans` can expand into a real SPARK implementation plan.
+
+- **`rudis-adapter` gains a bounded "Rudis Task Intake" output**: when `specs/<feature>/tasks.md` is present and relevant, the adapter extracts `TaskID`, `Parallel`, `Story`, and `File Paths` fields into a task inventory table, plus story slices, execution signals (sequential prerequisites, parallel candidates, test-first signals, checkpoints), and a `Task Gaps` list for anything ambiguous or missing — never inferred or invented.
+- **`writing-plans` gains an "Optional External Task Intake" section**: it treats any external task intake block as supporting task intent, not an executable plan, preserves source task IDs for traceability, and still lets source code, project memory, and approved rules override external intent on conflict. The section stays adapter-neutral — no mention of Rudis or `.rudis` in `skills/writing-plans/SKILL.md`.
+- **Docs**: `docs/integrations/rudis.md` documents the "Continue my Rudis tasks with SPARK" flow, including targeting a specific feature folder (e.g. `specs/001-invoice`), and clarifies that Rudis owns feature intent/task order while SPARK owns implementation planning and execution discipline.
+- **New test fixture** `tests/fixtures/rudis-project/` (a minimal `.spark/integrations/rudis.json`, `.rudis/memory/constitution.md`, and `specs/001-example/{spec,plan,tasks}.md`) backs new assertions in `tests/native-installer/test-optional-integrations.sh` (9 new checks, 27 total) that verify the Task Intake contract and confirm core skills and `writing-plans` stay Rudis-neutral.
+- Rudis `tasks.md` is still never executed directly — it is read-only, normalized into Task Intake, and expanded by `writing-plans`.
+
 ## v6.5.0 (2026-07-24)
 
 ### New: Optional Rudis integration adapter
