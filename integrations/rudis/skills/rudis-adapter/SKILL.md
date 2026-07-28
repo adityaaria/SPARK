@@ -1,6 +1,6 @@
 ---
 name: rudis-adapter
-description: Use when a project has explicitly enabled the optional Rudis integration or the user asks SPARK to consume Rudis artifacts as external knowledge.
+description: Use when a project has explicitly enabled the optional Rudis integration, when the user asks to continue Rudis tasks with SPARK, or when the user says "Continue my Rudis tasks with SPARK", "Lanjutkan task Rudis dengan SPARK", "Use SPARK for Rudis tasks", or "Turn Rudis tasks into a SPARK plan". Also use when SPARK should consume Rudis artifacts such as .rudis, specs/<feature>/tasks.md, spec.md, plan.md, or constitution.md as external knowledge.
 ---
 
 # Rudis Adapter

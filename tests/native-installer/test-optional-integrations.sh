@@ -66,6 +66,9 @@ else
 fi
 
 assert_file_contains "$REPO_ROOT/integrations/rudis/skills/rudis-adapter/SKILL.md" "Use when .*Rudis" "Rudis adapter is isolated in optional integration skills"
+assert_file_contains "$REPO_ROOT/integrations/rudis/skills/rudis-adapter/SKILL.md" "Continue my Rudis tasks with SPARK" "Rudis adapter triggers on simple English prompt"
+assert_file_contains "$REPO_ROOT/integrations/rudis/skills/rudis-adapter/SKILL.md" "Lanjutkan task Rudis dengan SPARK" "Rudis adapter triggers on simple Indonesian prompt"
+assert_file_contains "$REPO_ROOT/integrations/rudis/skills/rudis-adapter/SKILL.md" "Turn Rudis tasks into a SPARK plan" "Rudis adapter triggers on planning prompt"
 assert_file_contains "$REPO_ROOT/integrations/rudis/skills/rudis-adapter/SKILL.md" 'MUST read `references/adapter-contract.md`' "Rudis adapter requires its contract reference"
 assert_file_contains "$REPO_ROOT/integrations/rudis/skills/rudis-adapter/references/adapter-contract.md" "External Knowledge Adapter Context" "Rudis adapter outputs neutral context"
 assert_file_contains "$REPO_ROOT/integrations/rudis/skills/rudis-adapter/references/adapter-contract.md" "Rudis Task Intake" "Rudis adapter defines task intake output"

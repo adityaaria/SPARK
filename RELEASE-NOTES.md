@@ -1,5 +1,11 @@
 # SPARK Release Notes
 
+## v6.6.1 (2026-07-28)
+
+### Fixed: rudis-adapter didn't reliably trigger on plain-language requests
+
+`rudis-adapter`'s `description` frontmatter only matched a generic "Use when ... Rudis" pattern, so explicit user requests like "Continue my Rudis tasks with SPARK" or the Indonesian equivalent "Lanjutkan task Rudis dengan SPARK" weren't guaranteed to route to the adapter. The description now lists these phrases (and "Use SPARK for Rudis tasks" / "Turn Rudis tasks into a SPARK plan") explicitly, and `tests/native-installer/test-optional-integrations.sh` gained 3 new assertions (30 checks total) to keep them from regressing.
+
 ## v6.6.0 (2026-07-27)
 
 ### New: Rudis Task Intake for the optional Rudis adapter
